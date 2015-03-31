@@ -207,7 +207,7 @@
 	end
 
 
-	local function escapeSetting(value)
+	function premake.xcode6.esc(value)
 		value = value:gsub('["\\\n\r\t]', escapeChar)
 		return value
 	end
@@ -216,7 +216,7 @@
 	function premake.xcode6.quoted(value)
 		value = value..''
 		if not value:match('^[%a%d_./]+$') then
-			value = '"' .. escapeSetting(value) .. '"'
+			value = '"' .. premake.xcode6.esc(value) .. '"'
 		end
 		return value
 	end
