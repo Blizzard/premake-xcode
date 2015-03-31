@@ -405,7 +405,7 @@
 			settings['GCC_PREFIX_HEADER'] = cfg.pchheader
 		end
 
-		settings['GCC_PREPROCESSOR_DEFINITIONS'] = premake.esc(cfg.defines)
+		settings['GCC_PREPROCESSOR_DEFINITIONS'] = table.join({'$(inherited)'}, premake.esc(cfg.defines))
 
 		settings["GCC_SYMBOLS_PRIVATE_EXTERN"] = 'NO'
 
