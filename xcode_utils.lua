@@ -61,6 +61,7 @@
 	function premake.xcode6.getBuildCategory(filename)
 		local categories = {
 			[".a"] = "Frameworks",
+			[".app"] = "Applications",
 			[".c"] = "Sources",
 			[".cc"] = "Sources",
 			[".cpp"] = "Sources",
