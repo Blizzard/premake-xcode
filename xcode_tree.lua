@@ -172,7 +172,7 @@
 
 						else
 							linkT.path       = path.getrelative(sln.location, path.join(prj.location, link))
-							linkT.sourceTree = '<group>'
+							linkT.sourceTree = 'SOURCE_ROOT'
 
 							tree.insert(libraries, linkT)
 						end

@@ -3,36 +3,11 @@
 -- Define the Apple XCode action and support functions.
 -- Copyright (c) 2015 Tom van Dijck
 --
-
 	premake.xcode6 = { }
 	local api      = premake.api
 	local xcode6   = premake.xcode6
 	local project  = premake.project
 	local solution = premake.solution
-
-	newaction
-	{
-		trigger         = "xcode",
-		shortname       = "Xcode",
-		description     = "Generate Apple Xcode 6 project",
-		os              = "macosx",
-
-		valid_kinds     = { "ConsoleApp", "WindowedApp", "SharedLib", "StaticLib", "Makefile", "None" },
-		valid_languages = { "C", "C++" },
-		valid_tools     = { cc = { "clang" } },
-
-		onsolution = function(sln)
-			premake.escaper(premake.xcode6.esc)
-			premake.generate(sln, ".xcodeproj/project.pbxproj", xcode6.solution)
-		end,
-
-		supportsconfig = function(cfg)
-			if (cfg.platform == 'x32') then
-				return false;
-			end
-			return true;
-		end,
-	}
 
 
 	function xcode6.solution(sln)
@@ -312,6 +287,7 @@
 		_p('')
 	end
 
+
 	function xcode6.PBXResourcesBuildPhase(tree)
 		_p('/* Begin PBXResourcesBuildPhase section */')
 
@@ -320,6 +296,7 @@
 		_p('')
 	end
 
+
 	function xcode6.PBXShellScriptBuildPhase(tree)
 		_p('/* Begin PBXShellScriptBuildPhase section */')
 
@@ -327,6 +304,7 @@
 		_p('/* End PBXShellScriptBuildPhase section */')
 		_p('')
 	end
+
 
 	function xcode6.PBXSourcesBuildPhase(tree)
 		_p('/* Begin PBXSourcesBuildPhase section */')
@@ -352,6 +330,7 @@
 		_p('')
 	end
 
+
 	function xcode6.PBXTargetDependency(tree)
 		_p('/* Begin PBXTargetDependency section */')
 
@@ -367,6 +346,7 @@
 		_p('')
 	end
 
+
 	function xcode6.PBXVariantGroup(tree)
 		_p('/* Begin PBXVariantGroup section */')
 
@@ -374,6 +354,7 @@
 		_p('/* End PBXVariantGroup section */')
 		_p('')
 	end
+
 
 	function xcode6.XCBuildConfiguration(node)
 
@@ -405,7 +386,7 @@
 			settings['GCC_PREFIX_HEADER'] = cfg.pchheader
 		end
 
-		settings['GCC_PREPROCESSOR_DEFINITIONS'] = table.join({'$(inherited)'}, premake.esc(cfg.defines))
+		settings['GCC_PREPROCESSOR_DEFINITIONS'] = table.join('$(inherited)', premake.esc(cfg.defines))
 
 		settings["GCC_SYMBOLS_PRIVATE_EXTERN"] = 'NO'
 
@@ -417,16 +398,17 @@
 		settings['GCC_WARN_UNUSED_VARIABLE'] = 'YES'
 
 		if #cfg.includedirs > 0 then
-			settings['HEADER_SEARCH_PATHS']      = table.join({'$(inherited)'}, solution.getrelative(cfg.solution, cfg.includedirs))
+			settings['HEADER_SEARCH_PATHS']      = table.join('$(inherited)', solution.getrelative(cfg.solution, cfg.includedirs))
 		end
 
-		if #cfg.libdirs > 0 then
-			settings['LIBRARY_SEARCH_PATHS']     = table.join({'$(inherited)'}, solution.getrelative(cfg.solution, cfg.libdirs))
+		-- get libdirs and links
+		if cfg.libdirs and #cfg.libdirs > 0 then
+			settings['LIBRARY_SEARCH_PATHS']     = table.join('$(inherited)', solution.getrelative(cfg.solution, cfg.libdirs))
 		end
 
 		local fwdirs = xcode6.getFrameworkDirs(node)
-		if #fwdirs > 0 then
-			settings['FRAMEWORK_SEARCH_PATHS']   = table.join({'$(inherited)'}, fwdirs)
+		if fwdirs and #fwdirs > 0 then
+			settings['FRAMEWORK_SEARCH_PATHS']   = table.join('$(inherited)', fwdirs)
 		end
 
 		if cfg.project then
@@ -434,7 +416,8 @@
 			settings['CONFIGURATION_BUILD_DIR']  = solution.getrelative(cfg.solution, cfg.buildtarget.directory)
 			settings['PRODUCT_NAME']             = cfg.buildtarget.basename
 		else
-			settings['USE_HEADERMAP'] = 'NO'
+			settings['USE_HEADERMAP']            = 'NO'
+			settings['LIBRARY_SEARCH_PATHS']     = table.join('$(BUILT_PRODUCTS_DIR)', solution.getrelative(cfg.solution, cfg.libdirs))
 		end
 
 		-- build list of "other" C/C++ flags
@@ -467,6 +450,7 @@
 		_p(3, 'name = %s;', xcode6.quoted(node.name))
 		_p(2, '};')
 	end
+
 
 	function xcode6.XCConfigurationList(tree)
 		local configLists = {}
