@@ -25,8 +25,26 @@
             if a.kind ~= b.kind then
                 if a.kind == 'group' then
                     return true
+                elseif b.kind == 'group' then
+                    return false
                 end
-                if b.kind == 'group' then
+            end
+            return a.name < b.name
+        end)
+
+        table.sort(sln.projects, function(a, b)
+            if a.kind ~= b.kind then
+                if a.kind == 'WindowedApp' then
+                    return true
+                elseif b.kind == 'WindowedApp' then
+                    return false
+                elseif a.kind == 'ConsoleApp' then
+                    return true
+                elseif b.kind == 'ConsoleApp' then
+                    return false
+                elseif a.kind == 'Utility' then
+                    return true
+                elseif b.kind == 'Utility' then
                     return false
                 end
             end
