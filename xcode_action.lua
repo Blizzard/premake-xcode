@@ -412,7 +412,7 @@
 
 		if cfg.pchheader and not cfg.flags.NoPCH then
 			settings['GCC_PRECOMPILE_PREFIX_HEADER'] = 'YES'
-			settings['GCC_PREFIX_HEADER'] = cfg.pchheader
+			settings['GCC_PREFIX_HEADER'] = solution.getrelative(cfg.solution, path.join(cfg.project.basedir, cfg.pchheader))
 		end
 
 		settings['GCC_PREPROCESSOR_DEFINITIONS'] = table.join('$(inherited)', premake.esc(cfg.defines))
@@ -471,6 +471,10 @@
 		elseif cfg.warnings == "Off" then
 			settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
 		end
+
+        if cfg.xcode_settings then
+            settings = table.merge(settings, cfg.xcode_settings)
+        end
 
 		_p(2, '%s /* %s */ = {', node.id, node.name)
 		_p(3, 'isa = XCBuildConfiguration;')

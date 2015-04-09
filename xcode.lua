@@ -13,6 +13,7 @@
 
 	include("_preload.lua")
 	include("xcode_action.lua")
+	include("xcode_api.lua")
 	include("xcode_config.lua")
 	include("xcode_tree.lua")
 	include("xcode_utils.lua")
