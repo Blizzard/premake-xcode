@@ -21,7 +21,18 @@
 		migBuildRuleId = xcode6.newid('migBuildRuleId')
 
 		xcode6.mergeConfigs(sln)
-		local tree = xcode6.getSolutionTree(sln)
+		local tree = xcode6.getSolutionTree(sln, function(a, b)
+            if a.kind ~= b.kind then
+                if a.kind == 'group' then
+                    return true
+                end
+                if b.kind == 'group' then
+                    return false
+                end
+            end
+            return a.name < b.name
+        end)
+
 		if tree then
 			_p(1, 'objects = {')
 

@@ -71,9 +71,29 @@
 			end
 
 			-- create project node.
+			--- first, save and remove special items
+			local specials = { }
+			for n = #prj._.files, 1, -1 do
+			    local fcfg = prj._.files[n]
+                if fcfg.vpath ~= fcfg.relpath then
+                    table.insert(specials, fcfg)
+                    table.remove(prj._.files, n)
+                end
+			end
+
+            --- next, construct the source tree as usual
+			local prjT = project.getsourcetree(prj)
+
+			--- re-insert the specials
+			prj._.files = table.join(specials, prj._.files)
+			table.foreachi(specials, function(fcfg)
+                local node = tree.add(prjT, fcfg.vpath)
+                setmetatable(node, { __index = fcfg })
+			end)
+
 			local group = tree.add(slnT, path.join('Targets', prj.group), { kind = 'group' } )
 			xcode6.setProductGroupId(group)
-			local prjT = tree.insert(group, tree.new(prj.name))
+			tree.insert(group, prjT)
 
 			prjT.kind                   = 'project'
 			prjT.project                = prj
@@ -92,43 +112,41 @@
 			    prjT.frameworkBuildPhaseId = xcode6.newid(prj.name, 'PBXFrameworksBuildPhase')
 			end
 
-			-- add files to project.
+			-- configure file settings.
 			table.foreachi(prj._.files, function(fcfg)
-				local flags =
-				{
-					trim = (fcfg.vpath == fcfg.relpath),
-					kind = 'group'
-				}
+				fcfg.fileConfig     = fcfg -- allows getting fcfg from fcfgT
+				fcfg.solution       = sln
+				fcfg.relpath        = path.getrelative(sln.location, fcfg.abspath)
+				fcfg.id             = xcode6.newid(fcfg.abspath, "PBXFileReference")
+				fcfg.fileType       = xcode6.getFileType(fcfg.abspath)
+				fcfg.isResource     = xcode6.isItemResource(prj, fcfg)
+				fcfg.buildCategory  = xcode6.getBuildCategory(fcfg.abspath)
 
-				local parent = tree.add(prjT, path.getdirectory(fcfg.vpath), flags)
-				xcode6.setProductGroupId(parent)
-
-				local fcfgT = tree.insert(parent, tree.new(path.getname(fcfg.vpath)))
-				fcfgT.kind = 'fileConfig'
-				fcfgT.fileConfig    = fcfg
-				fcfgT.project       = prj
-				fcfgT.solution      = sln
-				fcfgT.relpath       = path.getrelative(sln.location, fcfg.abspath)
-				fcfgT.id            = xcode6.newid(fcfg.abspath, "PBXFileReference")
-				fcfgT.fileType      = xcode6.getFileType(fcfg.abspath)
-				fcfgT.isResource    = xcode6.isItemResource(prj, fcfg)
-				fcfgT.buildCategory = xcode6.getBuildCategory(fcfg.abspath)
-
-				if fcfgT.buildCategory then
-					fcfgT.buildId = xcode6.newid(fcfg.abspath, "PBXBuildFile")
+				if fcfg.buildCategory then
+					fcfg.buildId = xcode6.newid(fcfg.abspath, "PBXBuildFile")
 				end
-
-				if string.endswith(fcfg.abspath, "Info.plist") then
-					prjT.infoplist = fcfgT
-				end
-
-				if path.getextension(fcfg.abspath) == '.mig' then
-					prjT.needsMigRule = true
-					slnT.needsMigRule = true
-				end
-
-				fcfg.xcodeNode = fcfgT
 			end)
+
+			tree.traverse(prjT, {
+			    onbranch = function(node)
+			        node.kind = 'group'
+				    xcode6.setProductGroupId(node)
+			    end,
+			    onleaf = function(node)
+                    node.kind = 'fileConfig'
+
+                    if string.endswith(node.abspath, "Info.plist") then
+                        prjT.infoplist = node
+                    end
+
+                    if path.getextension(node.abspath) == '.mig' then
+                        prjT.needsMigRule = true
+                        slnT.needsMigRule = true
+                    end
+
+                    node.fileConfig.xcodeNode = node
+			    end
+		    })
 
 			-- add configs to project.
 			prjT.configList = tree.new(prj.name)
