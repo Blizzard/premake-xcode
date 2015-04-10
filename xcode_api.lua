@@ -1,5 +1,5 @@
 --
--- xcode6_utils.lua
+-- xcode6_api.lua
 -- Define the Apple XCode action and support functions.
 -- Copyright (c) 2015 Blizzard Entertainment
 --

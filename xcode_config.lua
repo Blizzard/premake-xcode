@@ -1,7 +1,7 @@
 --
 -- xcode6_config.lua
 -- Define the Apple XCode action and support functions.
--- Copyright (c) 2015 Tom van Dijck
+-- Copyright (c) 2015 Blizzard Entertainment
 --
 
 	local api      = premake.api
@@ -65,23 +65,23 @@
 			end
 
 			if not cfg.includedirs then
-				cfg.includedirs = {} 
+				cfg.includedirs = {}
 			end
 
 			if not cfg.libdirs then
-				cfg.libdirs = {} 
+				cfg.libdirs = {}
 			end
 
 			if not cfg.buildoptions then
-				cfg.buildoptions = {} 
+				cfg.buildoptions = {}
 			end
 
 			if not cfg.linkoptions then
-				cfg.linkoptions = {} 
+				cfg.linkoptions = {}
 			end
 
 			if not cfg.defines then
-				cfg.defines = {} 
+				cfg.defines = {}
 			end
 
 			-- union of everything.

@@ -1,7 +1,7 @@
 --
--- xcode6.lua
+-- xcode6_action.lua
 -- Define the Apple XCode action and support functions.
--- Copyright (c) 2015 Tom van Dijck
+-- Copyright (c) 2015 Blizzard Entertainment
 --
 	premake.xcode6 = { }
 	local api      = premake.api
