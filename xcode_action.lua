@@ -412,7 +412,7 @@
 
 		if cfg.pchheader and not cfg.flags.NoPCH then
 			settings['GCC_PRECOMPILE_PREFIX_HEADER'] = 'YES'
-			settings['GCC_PREFIX_HEADER'] = solution.getrelative(cfg.solution, path.join(cfg.project.basedir, cfg.pchheader))
+			settings['GCC_PREFIX_HEADER'] = solution.getrelative(cfg.solution, path.join(cfg.project.basedir, cfg.pchsource or cfg.pchheader))
 		end
 
 		settings['GCC_PREPROCESSOR_DEFINITIONS'] = table.join('$(inherited)', premake.esc(cfg.defines))
