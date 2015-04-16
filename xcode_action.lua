@@ -443,7 +443,6 @@
 		if cfg.project then
 			settings['OBJROOT']                  = solution.getrelative(cfg.solution, cfg.objdir)
 			settings['CONFIGURATION_BUILD_DIR']  = solution.getrelative(cfg.solution, cfg.buildtarget.directory)
-			settings['BUILT_PRODUCTS_DIR']       = solution.getrelative(cfg.solution, cfg.buildtarget.directory)
 			settings['PRODUCT_NAME']             = cfg.buildtarget.basename
 		else
 			settings['USE_HEADERMAP']            = 'NO'
