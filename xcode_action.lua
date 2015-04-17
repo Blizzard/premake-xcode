@@ -6,6 +6,7 @@
 	premake.xcode6 = { }
 	local api      = premake.api
 	local xcode6   = premake.xcode6
+	local config   = premake.config
 	local project  = premake.project
 	local solution = premake.solution
 
@@ -389,6 +390,8 @@
 
 		local settings = {}
 		local cfg = node.config
+		local prj = cfg.project
+		local sln = cfg.solution
 
 		if cfg.flags.Cpp11 then
 			settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++0x'
@@ -412,7 +415,7 @@
 
 		if cfg.pchheader and not cfg.flags.NoPCH then
 			settings['GCC_PRECOMPILE_PREFIX_HEADER'] = 'YES'
-			settings['GCC_PREFIX_HEADER'] = solution.getrelative(cfg.solution, path.join(cfg.project.basedir, cfg.pchsource or cfg.pchheader))
+			settings['GCC_PREFIX_HEADER'] = solution.getrelative(sln, path.join(prj.basedir, cfg.pchsource or cfg.pchheader))
 		end
 
 		settings['GCC_PREPROCESSOR_DEFINITIONS'] = table.join('$(inherited)', premake.esc(cfg.defines))
@@ -427,12 +430,16 @@
 		settings['GCC_WARN_UNUSED_VARIABLE'] = 'YES'
 
 		if #cfg.includedirs > 0 then
-			settings['HEADER_SEARCH_PATHS']      = table.join('$(inherited)', solution.getrelative(cfg.solution, cfg.includedirs))
+			settings['HEADER_SEARCH_PATHS']      = table.join('$(inherited)', solution.getrelative(sln, cfg.includedirs))
 		end
 
 		-- get libdirs and links
 		if cfg.libdirs and #cfg.libdirs > 0 then
-			settings['LIBRARY_SEARCH_PATHS']     = table.join('$(inherited)', solution.getrelative(cfg.solution, cfg.libdirs))
+			settings['LIBRARY_SEARCH_PATHS']     = table.join('$(inherited)',
+			                                        table.translate(config.getlinks(cfg, 'siblings', 'directory'),
+			                                            function(s)
+			                                                return path.rebase(s, prj.location, sln.location)
+			                                            end))
 		end
 
 		local fwdirs = xcode6.getFrameworkDirs(node)
@@ -440,13 +447,13 @@
 			settings['FRAMEWORK_SEARCH_PATHS']   = table.join('$(inherited)', fwdirs)
 		end
 
-		if cfg.project then
-			settings['OBJROOT']                  = solution.getrelative(cfg.solution, cfg.objdir)
-			settings['CONFIGURATION_BUILD_DIR']  = solution.getrelative(cfg.solution, cfg.buildtarget.directory)
+		if prj then
+			settings['OBJROOT']                  = solution.getrelative(sln, cfg.objdir)
+			settings['CONFIGURATION_BUILD_DIR']  = solution.getrelative(sln, cfg.buildtarget.directory)
 			settings['PRODUCT_NAME']             = cfg.buildtarget.basename
 		else
 			settings['USE_HEADERMAP']            = 'NO'
-			settings['LIBRARY_SEARCH_PATHS']     = table.join('$(BUILT_PRODUCTS_DIR)', solution.getrelative(cfg.solution, cfg.libdirs))
+			settings['LIBRARY_SEARCH_PATHS']     = solution.getrelative(sln, cfg.libdirs)
 		end
 
 		-- build list of "other" C/C++ flags
