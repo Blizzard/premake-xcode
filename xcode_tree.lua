@@ -67,7 +67,7 @@
 			productT.buildCategory  = xcode6.getBuildCategory(productT.name)
 
 			if productT.buildCategory then
-				productT.buildId = xcode6.newid(productT.name, "PBXBuildFile")
+				productT.buildId = xcode6.newid(productT.name, "PBXBuildFile", productT.buildCategory)
 			end
 
 			-- create project node.
@@ -123,7 +123,7 @@
 				fcfg.buildCategory  = xcode6.getBuildCategory(fcfg.abspath)
 
 				if fcfg.buildCategory then
-					fcfg.buildId = xcode6.newid(fcfg.abspath, "PBXBuildFile")
+					fcfg.buildId = xcode6.newid(fcfg.abspath, "PBXBuildFile", fcfg.buildCategory, prj.name)
 				end
 			end)
 
@@ -152,6 +152,7 @@
 			prjT.configList = tree.new(prj.name)
 			prjT.configList.kind = 'configList'
 			prjT.configList.id   = xcode6.newid(prj.name, 'project', 'XCConfigurationList')
+			prjT.configList.isa  = 'PBXNativeTarget'
 
 			for cfg in project.eachconfig(prj) do
 				local cfgT = tree.insert(prjT.configList, tree.new(cfg.name))
@@ -174,7 +175,7 @@
 						linkT.buildCategory = xcode6.getBuildCategory(link)
 
 						if linkT.buildCategory then
-							linkT.buildId = xcode6.newid(link, "PBXBuildFile")
+							linkT.buildId = xcode6.newid(link, "PBXBuildFile", linkT.buildCategory, prjT.frameworkBuildPhaseId)
 						end
 
 						if path.isframework(name) then
@@ -229,6 +230,7 @@
 		slnT.configList = tree.new(sln.name)
 		slnT.configList.kind = 'configList'
 		slnT.configList.id   = xcode6.newid(sln.name, 'solution', 'XCConfigurationList')
+		slnT.configList.isa  = 'PBXProject'
 
 		for cfg in solution.eachconfig(sln) do
 			local cfgT = tree.insert(slnT.configList, tree.new(cfg.name))

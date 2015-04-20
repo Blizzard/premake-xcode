@@ -81,21 +81,28 @@
 
 
 	function xcode6.PBXBuildFile(tree)
+	    _p('')
 		_p('/* Begin PBXBuildFile section */')
 
-		premake.tree.traverse(tree, {
-			onleaf = function(node)
-				if node.buildId then
-					_p(2, '%s = { isa = PBXBuildFile; fileRef = %s /* %s */; };', node.buildId, node.id, node.name)
-				end
-			end
-		})
+        local files = { }
+        premake.tree.traverse(tree, {
+            onleaf = function(node)
+                if node.buildId then
+                    table.insert(files, node)
+                end
+            end
+        })
+        table.sort(files, function(a, b) return a.buildId < b.buildId end)
+        for _, node in ipairs(files) do
+			_p(2, '%s /* %s in %s */ = { isa = PBXBuildFile; fileRef = %s /* %s */; };', node.buildId, node.name, node.buildCategory, node.id, node.name)
+        end
 
 		_p('/* End PBXBuildFile section */')
 	end
 
 
 	function xcode6.PBXBuildRule(tree)
+	    _p('')
 		_p('/* Begin PBXBuildRule section */')
 		if tree.needsMigRule then
 			_p(2, '%s /* PBXBuildRule */ = {', migBuildRuleId)
@@ -117,78 +124,93 @@
 
 
 	function xcode6.PBXContainerItemProxy(tree)
+		_p('')
 		_p('/* Begin PBXContainerItemProxy section */')
 
+        local entries = { }
 		for prj in solution.eachproject(tree.solution) do
-			_p(2, '%s /* PBXContainerItemProxy */ = {', prj.xcodeNode.containerItemProxyId)
+		    table.insert(entries, prj.xcodeNode)
+		end
+        table.sort(entries, function(a, b) return a.containerItemProxyId < b.containerItemProxyId end)
+		for _, entry in ipairs(entries) do
+			_p(2, '%s /* PBXContainerItemProxy */ = {', entry.containerItemProxyId)
 			_p(3, 'isa = PBXContainerItemProxy;')
 			_p(3, 'containerPortal = %s /* Project object */;', tree.id)
 			_p(3, 'proxyType = 1;')
-			_p(3, 'remoteGlobalIDString = %s;', prj.xcodeNode.targetId)
-			_p(3, 'remoteInfo = "%s";', prj.name)
+			_p(3, 'remoteGlobalIDString = %s;', entry.targetId)
+			_p(3, 'remoteInfo = %s;', xcode6.quoted(entry.name))
 			_p(2, '};')
 		end
 
 		_p('/* End PBXContainerItemProxy section */')
-		_p('')
 	end
 
 
 	function xcode6.PBXCopyFilesBuildPhase(tree)
+		_p('')
 		_p('/* Begin PBXCopyFilesBuildPhase section */')
 
 
 		_p('/* End PBXCopyFilesBuildPhase section */')
-		_p('')
 	end
 
 
 	function xcode6.PBXFileReference(tree)
+		_p('')
 		_p('/* Begin PBXFileReference section */')
 
+        local entries = { }
 		premake.tree.traverse(tree, {
-			onleaf = function(node)
-				if node.kind == 'fileConfig' then
-					_p(2,'%s /* %s */ = {isa = PBXFileReference; lastKnownFileType = %s; name = %s; path = %s; sourceTree = "<group>"; };',
-						node.id, node.name, node.fileType, xcode6.quoted(node.name), xcode6.quoted(node.relpath))
-				elseif node.kind == 'link' then
-					_p(2,'%s /* %s */ = {isa = PBXFileReference; lastKnownFileType = %s; name = %s; path = %s; sourceTree = %s; };',
-						node.id, node.name, node.fileType, xcode6.quoted(node.name), xcode6.quoted(node.path), xcode6.quoted(node.sourceTree))
-				elseif node.kind == 'product' then
-					_p(2,'%s /* %s */ = {isa = PBXFileReference; explicitFileType = %s; includeInIndex = 0; path = %s; sourceTree = BUILT_PRODUCTS_DIR; };',
-						node.id, node.name, node.targetType, xcode6.quoted(node.name))
-				end
-			end
+			onleaf = function(node) table.insert(entries, node) end
 		})
 
+        table.sort(entries, function(a, b) return a.id < b.id end)
+        for _, node in ipairs(entries) do
+            if node.kind == 'fileConfig' then
+                _p(2,'%s /* %s */ = {isa = PBXFileReference; lastKnownFileType = %s; name = %s; path = %s; sourceTree = "<group>"; };',
+                    node.id, node.name, xcode6.quoted(node.fileType), xcode6.quoted(node.name), xcode6.quoted(node.relpath))
+            elseif node.kind == 'link' then
+                _p(2,'%s /* %s */ = {isa = PBXFileReference; lastKnownFileType = %s; name = %s; path = %s; sourceTree = %s; };',
+                    node.id, node.name, xcode6.quoted(node.fileType), xcode6.quoted(node.name), xcode6.quoted(node.path), xcode6.quoted(node.sourceTree))
+            elseif node.kind == 'product' then
+                _p(2,'%s /* %s */ = {isa = PBXFileReference; explicitFileType = %s; includeInIndex = 0; path = %s; sourceTree = BUILT_PRODUCTS_DIR; };',
+                    node.id, node.name, node.targetType, xcode6.quoted(node.name))
+            end
+		end
+
 		_p('/* End PBXFileReference section */')
-		_p('')
 	end
 
 
 	function xcode6.PBXFrameworksBuildPhase(tree)
+		_p('')
 		_p('/* Begin PBXFrameworksBuildPhase section */')
 
+        local entries = { }
 		for prj in solution.eachproject(tree.solution) do
 			if prj.xcodeNode.frameworkBuildPhaseId then
-				_p(2, '%s /* %s */ = {', prj.xcodeNode.frameworkBuildPhaseId, prj.name);
-				_p(3, 'isa = PBXFrameworksBuildPhase;')
-				_p(3, 'buildActionMask = 2147483647;')
-				_p(3, 'files = (')
-					for _, dep in ipairs(prj.xcodeNode.dependencies) do
-						 _p(4, '%s /* %s */,', dep.xcodeNode.product.buildId, dep.name)
-					end
-					for _, linkT in ipairs(prj.xcodeNode.frameworks) do
-						 _p(4, '%s /* %s */,', linkT.buildId, linkT.name)
-					end
-				_p(3, ');')
-				_p(3, 'runOnlyForDeploymentPostprocessing = 0;')
-				_p(2, '};')
+			    table.insert(entries, prj.xcodeNode)
 			end
 		end
 
+        table.sort(entries, function(a, b) return a.frameworkBuildPhaseId < b.frameworkBuildPhaseId end)
+        for _, entry in ipairs(entries) do
+            _p(2, '%s /* Frameworks */ = {', entry.frameworkBuildPhaseId);
+            _p(3, 'isa = PBXFrameworksBuildPhase;')
+            _p(3, 'buildActionMask = 2147483647;')
+            _p(3, 'files = (')
+                for _, dep in ipairs(entry.dependencies) do
+                     _p(4, '%s /* %s */,', dep.xcodeNode.product.buildId, dep.name)
+                end
+                for _, linkT in ipairs(entry.frameworks) do
+                     _p(4, '%s /* %s */,', linkT.buildId, linkT.name)
+                end
+            _p(3, ');')
+            _p(3, 'runOnlyForDeploymentPostprocessing = 0;')
+            _p(2, '};')
+		end
+
 		_p('/* End PBXFrameworksBuildPhase section */')
-		_p('')
 	end
 
 
@@ -221,78 +243,85 @@
 			end}, true)
 
 		if not table.isempty(settings) then
+			_p('')
 			_p('/* Begin PBXGroup section */')
 			xcode6.printSettingsTable(2, settings)
 			_p('/* End PBXGroup section */')
-			_p('')
 		end
 	end
 
 
 	function xcode6.PBXHeadersBuildPhase(tree)
+		_p('')
 		_p('/* Begin PBXHeadersBuildPhase section */')
 
 
 		_p('/* End PBXHeadersBuildPhase section */')
-		_p('')
 	end
 
 
 	function xcode6.PBXNativeTarget(tree)
+		_p('')
 		_p('/* Begin PBXNativeTarget section */')
 
+        local entries = { }
 		for prj in solution.eachproject(tree.solution) do
-			_p(2, '%s /* %s */ = {', prj.xcodeNode.targetId, prj.name);
+		    table.insert(entries, prj.xcodeNode)
+		end
+
+		table.sort(entries, function(a, b) return a.targetId < b.targetId end)
+		for _, entry in ipairs(entries) do
+			_p(2, '%s /* %s */ = {', entry.targetId, entry.name);
 			_p(3, 'isa = PBXNativeTarget;')
-			_p(3, 'buildConfigurationList = %s /* Build configuration list for PBXNativeTarget "%s" */;', prj.xcodeNode.configList.id, prj.name)
+			_p(3, 'buildConfigurationList = %s /* Build configuration list for %s "%s" */;', entry.configList.id, entry.configList.isa, entry.name)
 
 			_p(3, 'buildPhases = (')
-			_p(4, '%s /* Sources */,', prj.xcodeNode.sourcesBuildPhaseId)
-			if prj.xcodeNode.frameworkBuildPhaseId then
-				_p(4, '%s /* Frameworks */,', prj.xcodeNode.frameworkBuildPhaseId)
+			_p(4, '%s /* Sources */,', entry.sourcesBuildPhaseId)
+			if entry.frameworkBuildPhaseId then
+				_p(4, '%s /* Frameworks */,', entry.frameworkBuildPhaseId)
 			end
 			_p(3, ');')
 
 			_p(3, 'buildRules = (')
-			if prj.xcodeNode.needsMigRule then
-				_p(4, '%s,', migBuildRuleId)
+			if entry.needsMigRule then
+				_p(4, '%s /* PBXBuildRule */,', migBuildRuleId)
 			end
 			_p(3, ');')
 
 			_p(3, 'dependencies = (')
-			local deps = prj.xcodeNode.dependencies
+			local deps = entry.dependencies
 			if (deps and #deps > 0) then
 				for _, dep in ipairs(deps) do
-					_p(4, '%s,', dep.xcodeNode.targetDependencyId)
+					_p(4, '%s /* PBXTargetDependency */,', dep.xcodeNode.targetDependencyId)
 				end
 			end
 			_p(3, ');')
 
-			_p(3, 'name = %s;', xcode6.quoted(prj.name))
-			_p(3, 'productName = %s;', xcode6.quoted(prj.name))
-			_p(3, 'productReference = %s /* %s */;', prj.xcodeNode.product.id, prj.xcodeNode.product.name)
-			_p(3, 'productType = "%s";', prj.xcodeNode.product.productType)
+			_p(3, 'name = %s;', xcode6.quoted(entry.name))
+			_p(3, 'productName = %s;', xcode6.quoted(entry.name))
+			_p(3, 'productReference = %s /* %s */;', entry.product.id, entry.product.name)
+			_p(3, 'productType = "%s";', entry.product.productType)
 			_p(2, '};')
 		end
 
 		_p('/* End PBXNativeTarget section */')
-		_p('')
 	end
 
 
 	function xcode6.PBXProject(tree)
 		local sln = tree.solution
 
+		_p('')
 		_p('/* Begin PBXProject section */')
 
 		_p(2, '%s /* Project object */ = {', tree.id)
 		_p(3, 'isa = PBXProject;')
 		_p(3, 'attributes = {')
 		_p(4, 'BuildIndependentTargetsInParallel = YES;')
-		_p(4, 'LastUpgradeCheck = 0610;')
+		_p(4, 'LastUpgradeCheck = 0630;')
 		_p(3, '};')
 
-		_p(3, 'buildConfigurationList = %s /* Build configuration list for PBXProject "%s" */;', tree.configList.id, sln.name)
+		_p(3, 'buildConfigurationList = %s /* Build configuration list for %s "%s" */;', tree.configList.id, tree.configList.isa, sln.name)
 		_p(3, 'compatibilityVersion = "Xcode 3.2";')
 		_p(3, 'developmentRegion = English;')
 		_p(3, 'hasScannedForEncodings = 0;')
@@ -301,7 +330,7 @@
 		_p(4, 'Base,')
 		_p(3, ');')
 
-		_p(3, 'mainGroup = %s;', tree.productGroupId)
+		_p(3, 'mainGroup = %s /* %s */;', tree.productGroupId, tree.name)
 		_p(3, 'productRefGroup = %s /* %s */;', tree.products.productGroupId, tree.products.name)
 		_p(3, 'projectDirPath = "";')
 		_p(3, 'projectRoot = "%s";', solution.getrelative(sln, sln.basedir))
@@ -314,41 +343,47 @@
 		_p(3, ');')
 		_p(2, '};')
 		_p('/* End PBXProject section */')
-		_p('')
 	end
 
 
 	function xcode6.PBXResourcesBuildPhase(tree)
+		_p('')
 		_p('/* Begin PBXResourcesBuildPhase section */')
 
 
 		_p('/* End PBXResourcesBuildPhase section */')
-		_p('')
 	end
 
 
 	function xcode6.PBXShellScriptBuildPhase(tree)
+		_p('')
 		_p('/* Begin PBXShellScriptBuildPhase section */')
 
 
 		_p('/* End PBXShellScriptBuildPhase section */')
-		_p('')
 	end
 
 
 	function xcode6.PBXSourcesBuildPhase(tree)
+		_p('')
 		_p('/* Begin PBXSourcesBuildPhase section */')
 
+        local entries = { }
 		for prj in solution.eachproject(tree.solution) do
-			_p(2, '%s /* Sources */ = {', prj.xcodeNode.sourcesBuildPhaseId)
+		    table.insert(entries, prj.xcodeNode)
+		end
+
+        table.sort(entries, function(a, b) return a.sourcesBuildPhaseId < b.sourcesBuildPhaseId end)
+        for _, entry in ipairs(entries) do
+			_p(2, '%s /* Sources */ = {', entry.sourcesBuildPhaseId)
 			_p(3, 'isa = PBXSourcesBuildPhase;')
 			_p(3, 'buildActionMask = 2147483647;')
 
 			_p(3, 'files = (')
-			premake.tree.traverse(prj.xcodeNode, {
+			premake.tree.traverse(entry, {
 				onleaf = function(node)
 					if node.buildId then
-						_p(4,'%s, /* %s */', node.buildId, node.name)
+						_p(4,'%s /* %s in %s */,', node.buildId, node.name, node.buildCategory)
 					end
 				end})
 			_p(3, ');')
@@ -357,32 +392,37 @@
 		end
 
 		_p('/* End PBXSourcesBuildPhase section */')
-		_p('')
 	end
 
 
 	function xcode6.PBXTargetDependency(tree)
+		_p('')
 		_p('/* Begin PBXTargetDependency section */')
 
+        local entries = { }
 		for prj in solution.eachproject(tree.solution) do
-			_p(2, '%s /* PBXTargetDependency */ = {', prj.xcodeNode.targetDependencyId)
+		    table.insert(entries, prj.xcodeNode)
+		end
+
+        table.sort(entries, function(a, b) return a.targetDependencyId < b.targetDependencyId end)
+        for _, entry in ipairs(entries) do
+			_p(2, '%s /* PBXTargetDependency */ = {', entry.targetDependencyId)
 			_p(3, 'isa = PBXTargetDependency;')
-			_p(3, 'target = %s /* %s */;', prj.xcodeNode.targetId, prj.name)
-			_p(3, 'targetProxy = %s /* PBXContainerItemProxy */;', prj.xcodeNode.containerItemProxyId)
+			_p(3, 'target = %s /* %s */;', entry.targetId, entry.name)
+			_p(3, 'targetProxy = %s /* PBXContainerItemProxy */;', entry.containerItemProxyId)
 			_p(2, '};')
 		end
 
 		_p('/* End PBXTargetDependency section */')
-		_p('')
 	end
 
 
 	function xcode6.PBXVariantGroup(tree)
+		_p('')
 		_p('/* Begin PBXVariantGroup section */')
 
 
 		_p('/* End PBXVariantGroup section */')
-		_p('')
 	end
 
 
@@ -508,6 +548,7 @@
 			end
 		}, true)
 
+		_p('')
 		_p('/* Begin XCBuildConfiguration section */')
 		local keys = table.keys(configs)
 		table.sort(keys)
@@ -515,15 +556,15 @@
 			xcode6.XCBuildConfiguration(configs[k]);
 		end
 		_p('/* End XCBuildConfiguration section */')
-		_p('')
 
+		_p('')
 		_p('/* Begin XCConfigurationList section */')
 		keys = table.keys(configLists)
 		table.sort(keys)
 		for _, k in ipairs(keys) do
 			local list = configLists[k]
 
-			_p(2, '%s /* Build configuration list for "%s" */ = {', list.id, list.name)
+			_p(2, '%s /* Build configuration list for %s "%s" */ = {', list.id, list.isa, list.name)
 			_p(3, 'isa = XCConfigurationList;')
 			_p(3, 'buildConfigurations = (')
 			for _, cfg in ipairs(list.children) do
@@ -535,6 +576,5 @@
 			_p(2, '};')
 		end
 		_p('/* End XCConfigurationList section */')
-		_p('')
 	end
 

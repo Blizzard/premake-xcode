@@ -239,9 +239,9 @@
 			value(level, name)
 		elseif type(value) ~= 'table' then
 			_p(level, '%s = %s;', premake.xcode6.quoted(name), premake.xcode6.quoted(value))
-		--elseif #value == 1 then
-			--_p(level, '%s = %s;', premake.xcode6.quoted(name), premake.xcode6.quoted(value[1]))
-		elseif #value >= 1 then
+		elseif #value == 1 then
+			_p(level, '%s = %s;', premake.xcode6.quoted(name), premake.xcode6.quoted(value[1]))
+		elseif #value > 1 then
 			_p(level, '%s = (', premake.xcode6.quoted(name))
 			for _, item in ipairs(value) do
 				_p(level + 1, '%s,', premake.xcode6.quoted(item))
