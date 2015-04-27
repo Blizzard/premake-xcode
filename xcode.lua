@@ -11,11 +11,11 @@
 	local m = p.modules.xcode
 	m.elements = {}
 
-	include("_preload.lua")
-	include("xcode_action.lua")
-	include("xcode_api.lua")
-	include("xcode_config.lua")
-	include("xcode_tree.lua")
-	include("xcode_utils.lua")
+	dofile("_preload.lua")
+	dofile("xcode_action.lua")
+	dofile("xcode_api.lua")
+	dofile("xcode_config.lua")
+	dofile("xcode_tree.lua")
+	dofile("xcode_utils.lua")
 
 	return m
