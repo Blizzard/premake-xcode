@@ -77,6 +77,15 @@
 		end
 
 		_p('}')
+
+        if _OPTIONS.debugraw then
+            local raw = premake.capture(function() premake.raw.solution(sln) end)
+            f = io.open(path.join(sln.location, sln.name .. ".raw"), "w")
+            if f then
+                f:write(raw)
+                f:close()
+            end
+        end
 	end
 
 

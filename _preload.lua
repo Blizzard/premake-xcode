@@ -29,3 +29,9 @@
 			return true
 		end,
 	}
+
+    newoption
+    {
+        trigger     = "debugraw",
+        description = "Output the raw solution hierarchy in addition to the project file"
+    }

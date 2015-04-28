@@ -14,3 +14,9 @@
 		scope = "config",
 		kind = "keyed:mixed",
     }
+
+    api.register {
+        name = "xcode_file_settings",
+        scope = "config",
+        kind = "keyed:mixed",
+    }
