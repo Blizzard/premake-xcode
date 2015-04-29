@@ -69,6 +69,7 @@
 			[".dylib"] = "Frameworks",
 			[".framework"] = "Frameworks",
 			[".m"] = "Sources",
+			[".mig"] = "Sources",
 			[".mm"] = "Sources",
 			[".strings"] = "Resources",
 			[".nib"] = "Resources",

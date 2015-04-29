@@ -139,11 +139,6 @@
                         prjT.infoplist = node
                     end
 
-                    if path.getextension(node.abspath) == '.mig' then
-                        prjT.needsMigRule = true
-                        slnT.needsMigRule = true
-                    end
-
                     node.fileConfig.xcodeNode = node
 			    end
 		    })

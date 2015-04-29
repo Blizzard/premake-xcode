@@ -103,7 +103,21 @@
         })
         table.sort(files, function(a, b) return a.buildId < b.buildId end)
         for _, node in ipairs(files) do
-			_p(2, '%s /* %s in %s */ = { isa = PBXBuildFile; fileRef = %s /* %s */; };', node.buildId, node.name, node.buildCategory, node.id, node.name)
+            local settings = { }
+            local file_settings = node.xcode_file_settings
+            if file_settings then
+                for k, v in pairs(file_settings) do
+                    table.insert(settings, k .. ' = ' .. v)
+                end
+            end
+
+            if #settings > 0 then
+                settings = 'settings = {' .. table.concat(settings, ', ') .. '; }; '
+            else
+                settings = ''
+            end
+
+            _p(2, '%s /* %s in %s */ = { isa = PBXBuildFile; fileRef = %s /* %s */; %s};', node.buildId, node.name, node.buildCategory, node.id, node.name, settings)
         end
 
 		_p('/* End PBXBuildFile section */')
@@ -113,21 +127,6 @@
 	function xcode6.PBXBuildRule(tree)
 	    _p('')
 		_p('/* Begin PBXBuildRule section */')
-		if tree.needsMigRule then
-			_p(2, '%s /* PBXBuildRule */ = {', migBuildRuleId)
-			_p(3, 'isa = PBXBuildRule;')
-			_p(3, 'compilerSpec = com.apple.compilers.proxy.script;')
-			_p(3, 'filePatterns = "*.mig";')
-			_p(3, 'fileType = pattern.proxy;')
-			_p(3, 'isEditable = 1;')
-			_p(3, 'outputFiles = (')
-			_p(4, '"$(DERIVED_FILES_DIR)/$(INPUT_FILE_BASE)_server.c",')
-			_p(4, '"$(DERIVED_FILES_DIR)/$(INPUT_FILE_BASE)_user.c",')
-			_p(4, '"$(DERIVED_FILES_DIR)/$(INPUT_FILE_BASE).h",')
-			_p(3, ');')
-			_p(3, 'script = "mig -header \\"${DERIVED_FILES_DIR}/${INPUT_FILE_BASE}.h\\" -user \\"${DERIVED_FILES_DIR}/${INPUT_FILE_BASE}_user.c\\" -server \\"${DERIVED_FILES_DIR}/${INPUT_FILE_BASE}_server.c\\" \\"${INPUT_FILE_PATH}\\"";')
-			_p(2, '};')
-		end
 		_p('/* End PBXBuildRule section */')
 	end
 
@@ -292,9 +291,6 @@
 			_p(3, ');')
 
 			_p(3, 'buildRules = (')
-			if entry.needsMigRule then
-				_p(4, '%s /* PBXBuildRule */,', migBuildRuleId)
-			end
 			_p(3, ');')
 
 			_p(3, 'dependencies = (')
