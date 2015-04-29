@@ -203,15 +203,29 @@
 
         table.sort(entries, function(a, b) return a.frameworkBuildPhaseId < b.frameworkBuildPhaseId end)
         for _, entry in ipairs(entries) do
+            seen = { }
+            links = { }
+            for _, cfgT in ipairs(entry.configList.children) do
+                for _, link in ipairs(cfgT.links) do
+                    if not seen[link] then
+                        seen[link] = true
+                        table.insert(links, link)
+                    end
+                end
+            end
+
             _p(2, '%s /* Frameworks */ = {', entry.frameworkBuildPhaseId);
             _p(3, 'isa = PBXFrameworksBuildPhase;')
             _p(3, 'buildActionMask = 2147483647;')
             _p(3, 'files = (')
                 for _, dep in ipairs(entry.dependencies) do
-                     _p(4, '%s /* %s */,', dep.xcodeNode.product.buildId, dep.name)
+                    _p(4, '%s /* %s */,', dep.xcodeNode.product.buildId, dep.name)
                 end
                 for _, linkT in ipairs(entry.frameworks) do
-                     _p(4, '%s /* %s */,', linkT.buildId, linkT.name)
+                    _p(4, '%s /* %s */,', linkT.buildId, linkT.name)
+                end
+                for _, link in ipairs(links) do
+                    _p(4, '%s /* %s */,', link.buildId, link.name)
                 end
             _p(3, ');')
             _p(3, 'runOnlyForDeploymentPostprocessing = 0;')
