@@ -13,10 +13,12 @@
 		name = "xcode_settings",
 		scope = "config",
 		kind = "keyed:mixed",
+		tokens = true
     }
 
     api.register {
         name = "xcode_file_settings",
         scope = "config",
         kind = "keyed:mixed",
+        tokens = true
     }
