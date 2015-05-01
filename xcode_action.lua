@@ -298,10 +298,30 @@
 			_p(3, 'buildConfigurationList = %s /* Build configuration list for %s "%s" */;', entry.configList.id, entry.configList.isa, entry.name)
 
 			_p(3, 'buildPhases = (')
+			if #entry.prebuild > 0 then
+			    for _, script in ipairs(entry.prebuild) do
+    			    _p(4, '%s /* Run Script */,', script.id)
+    			end
+			end
+
 			_p(4, '%s /* Sources */,', entry.sourcesBuildPhaseId)
+
+			if #entry.prelink > 0 then
+			    for _, script in ipairs(entry.prelink) do
+    			    _p(4, '%s /* Run Script */,', script.id)
+    			end
+			end
+
 			if entry.frameworkBuildPhaseId then
 				_p(4, '%s /* Frameworks */,', entry.frameworkBuildPhaseId)
 			end
+
+			if #entry.postbuild > 0 then
+			    for _, script in ipairs(entry.postbuild) do
+    			    _p(4, '%s /* Run Script */,', script.id)
+    			end
+			end
+
 			_p(3, ');')
 
 			_p(3, 'buildRules = (')
@@ -378,6 +398,36 @@
 		_p('')
 		_p('/* Begin PBXShellScriptBuildPhase section */')
 
+        local entries = { }
+        for prj in solution.eachproject(tree.solution) do
+            for _, entry in ipairs(prj.xcodeNode.prebuild) do
+                table.insert(entries, entry)
+            end
+            for _, entry in ipairs(prj.xcodeNode.prelink) do
+                table.insert(entries, entry)
+            end
+            for _, entry in ipairs(prj.xcodeNode.postbuild) do
+                table.insert(entries, entry)
+            end
+        end
+
+        table.sort(entries, function(a, b) return a.id < b.id end)
+        for _, entry in ipairs(entries) do
+            _p(2, '%s /* Run Script */ = {', entry.id)
+            _p(3, 'isa = PBXShellScriptBuildPhase;')
+            _p(3, 'buildActionMask = 2147483647;')
+			_p(3, 'files = (')
+			_p(3, ');')
+			_p(3, 'inputPaths = (')
+			_p(3, ');')
+			_p(3, 'name = "Run Script";')
+			_p(3, 'outputPaths = (')
+			_p(3, ');')
+			_p(3, 'runOnlyForDeploymentPostprocessing = 0;')
+			_p(3, 'shellPath = /bin/sh;')
+			_p(3, 'shellScript = "%s";', xcode6.quoted(entry.cmd))
+            _p(2, '};')
+        end
 
 		_p('/* End PBXShellScriptBuildPhase section */')
 	end

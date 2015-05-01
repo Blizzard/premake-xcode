@@ -106,11 +106,36 @@
 			prjT.dependencies           = project.getdependencies(prj)
 			prjT.frameworks             = {}
 			prjT.product                = productT
+			prjT.prebuild               = {}
+			prjT.prelink                = {}
+			prjT.postbuild              = {}
 			prj.xcodeNode               = prjT
 
 			if #prjT.dependencies > 0 then
 			    prjT.frameworkBuildPhaseId = xcode6.newid(prj.name, 'PBXFrameworksBuildPhase')
 			end
+
+            -- configure custom commands
+            table.foreachi(prj.prebuildcommands, function(cmd)
+                table.insert(prjT.prebuild, {
+                    id = xcode6.newid(tostring(prj.prebuildcommands), cmd),
+                    cmd = cmd
+                })
+            end)
+
+            table.foreachi(prj.prelinkcommands, function(cmd)
+                table.insert(prjT.prelink, {
+                    id = xcode6.newid(tostring(prj.prelinkcommands), cmd),
+                    cmd = cmd
+                })
+            end)
+
+            table.foreachi(prj.postbuildcommands, function(cmd)
+                table.insert(prjT.postbuild, {
+                    id = xcode6.newid(tostring(prj.postbuildcommands), cmd),
+                    cmd = cmd
+                })
+            end)
 
 			-- configure file settings.
 			table.foreachi(prj._.files, function(fcfg)
