@@ -21,13 +21,6 @@
 			premake.escaper(premake.xcode6.esc)
 			premake.generate(sln, ".xcodeproj/project.pbxproj", premake.xcode6.solution)
 		end,
-
-		supportsconfig = function(cfg)
-			if (cfg.platform == 'x32') then
-				return false
-			end
-			return true
-		end,
 	}
 
     newoption

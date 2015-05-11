@@ -304,6 +304,11 @@
     			end
 			end
 
+            table.foreachi(entry.project._.files, function(fcfg)
+                if fcfg.buildcommands and #fcfg.buildcommands > 0 then
+                    _p(4, '%s /* Run Script */,', xcode6.newid(tostring(fcfg.buildcommands), fcfg.abspath))
+                end
+            end)
 			_p(4, '%s /* Sources */,', entry.sourcesBuildPhaseId)
 
 			if #entry.prelink > 0 then
@@ -409,6 +414,18 @@
             for _, entry in ipairs(prj.xcodeNode.postbuild) do
                 table.insert(entries, entry)
             end
+
+            table.foreachi(prj._.files, function(fcfg)
+                if fcfg.buildcommands and #fcfg.buildcommands > 0 then
+                    table.insert(entries, {
+                        id = xcode6.newid(tostring(fcfg.buildcommands), fcfg.abspath),
+                        cmd = fcfg.buildcommands,
+                        inputs = table.join({ solution.getrelative(tree.solution, fcfg.abspath) }, fcfg.buildinputs),
+                        outputs = fcfg.buildoutputs,
+                        file = fcfg
+                    })
+                end
+            end)
         end
 
         table.sort(entries, function(a, b) return a.id < b.id end)
@@ -416,16 +433,29 @@
             _p(2, '%s /* Run Script */ = {', entry.id)
             _p(3, 'isa = PBXShellScriptBuildPhase;')
             _p(3, 'buildActionMask = 2147483647;')
+
 			_p(3, 'files = (')
 			_p(3, ');')
+
 			_p(3, 'inputPaths = (')
+			if entry.inputs then
+                for _, input in ipairs(entry.inputs) do
+                    _p(4, xcode6.quoted(input))
+                end
+            end
 			_p(3, ');')
 			_p(3, 'name = "Run Script";')
 			_p(3, 'outputPaths = (')
+			if entry.outputs then
+                for _, output in ipairs(entry.outputs) do
+                    _p(4, xcode6.quoted(output))
+                end
+            end
 			_p(3, ');')
 			_p(3, 'runOnlyForDeploymentPostprocessing = 0;')
 			_p(3, 'shellPath = /bin/sh;')
-			_p(3, 'shellScript = "%s";', xcode6.quoted(entry.cmd))
+			local cmd = type(entry.cmd) == 'table' and table.concat(entry.cmd, '\n') or entry.cmd
+			_p(3, 'shellScript = %s;', xcode6.quoted(cmd))
             _p(2, '};')
         end
 
@@ -537,6 +567,12 @@
 
 		settings['GCC_WARN_ABOUT_RETURN_TYPE'] = 'YES'
 		settings['GCC_WARN_UNUSED_VARIABLE'] = 'YES'
+
+		if cfg.architecture == 'x86' then
+		    settings['ARCHS'] = 'i386'
+		elseif cfg.architecture == 'x86_64' then
+		    settings['ARCHS'] = 'x86_64'
+		end
 
 		if #cfg.includedirs > 0 then
 			settings['HEADER_SEARCH_PATHS']      = table.join('$(inherited)', solution.getrelative(sln, cfg.includedirs))
