@@ -419,7 +419,7 @@
                 if fcfg.buildcommands and #fcfg.buildcommands > 0 then
                     table.insert(entries, {
                         id = xcode6.newid(tostring(fcfg.buildcommands), fcfg.abspath),
-                        cmd = fcfg.buildcommands,
+                        cmd = os.translateCommands(fcfg.buildcommands),
                         inputs = table.join({ solution.getrelative(tree.solution, fcfg.abspath) }, fcfg.buildinputs),
                         outputs = fcfg.buildoutputs,
                         file = fcfg

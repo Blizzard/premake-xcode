@@ -119,21 +119,21 @@
             table.foreachi(prj.prebuildcommands, function(cmd)
                 table.insert(prjT.prebuild, {
                     id = xcode6.newid(tostring(prj.prebuildcommands), cmd),
-                    cmd = cmd
+                    cmd = os.translateCommands(cmd)
                 })
             end)
 
             table.foreachi(prj.prelinkcommands, function(cmd)
                 table.insert(prjT.prelink, {
                     id = xcode6.newid(tostring(prj.prelinkcommands), cmd),
-                    cmd = cmd
+                    cmd = os.translateCommands(cmd)
                 })
             end)
 
             table.foreachi(prj.postbuildcommands, function(cmd)
                 table.insert(prjT.postbuild, {
                     id = xcode6.newid(tostring(prj.postbuildcommands), cmd),
-                    cmd = cmd
+                    cmd = os.translateCommands(cmd)
                 })
             end)
 
