@@ -36,7 +36,6 @@
 
         local f = configset.getFilter(api.scope.current)
 
-        filter { }
         files { name }
         filter { "files:" .. name }
         buildcommands {
