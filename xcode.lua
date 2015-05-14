@@ -13,7 +13,6 @@
 
 	dofile("_preload.lua")
 	dofile("xcode_action.lua")
-	dofile("xcode_api.lua")
 	dofile("xcode_config.lua")
 	dofile("xcode_tree.lua")
 	dofile("xcode_utils.lua")
