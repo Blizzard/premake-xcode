@@ -15,37 +15,42 @@
 		scope = "config",
 		kind = "keyed:mixed",
 		tokens = true
-    }
+	}
 
-    api.register {
-        name = "xcode_file_settings",
-        scope = "config",
-        kind = "keyed:mixed",
-        tokens = true
-    }
 
-    api.register {
-        name = "xcode_resources",
-        scope = "project",
-        kind = "list:file",
-        tokens = true
-    }
+	api.register {
+		name = "xcode_file_settings",
+		scope = "config",
+		kind = "keyed:mixed",
+		tokens = true
+	}
+
+
+	api.register {
+		name = "xcode_resources",
+		scope = "project",
+		kind = "list:file",
+		tokens = true
+	}
+
 
 	premake.override(_G, "icon", function(base, name)
 		local c = base(name)
 
-        local f = configset.getFilter(api.scope.current)
+		if _ACTION == "xcode" then
+			local f = configset.getFilter(api.scope.current)
 
-        files { name }
-        filter { "files:" .. name }
-        buildcommands {
-            "{COPY} \"%{premake.solution.getrelative(sln, file.abspath)}\" \"$BUILT_PRODUCTS_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Icon.icns\""
-        }
-        buildoutputs {
-            "$(BUILT_PRODUCTS_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Icon.icns"
-        }
+			files { name }
+			filter { "files:" .. name }
+			buildcommands {
+				"{COPY} \"%{premake.solution.getrelative(sln, file.abspath)}\" \"$BUILT_PRODUCTS_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Icon.icns\""
+			}
+			buildoutputs {
+				"$(BUILT_PRODUCTS_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Icon.icns"
+			}
 
-        configset.setFilter(api.scope.current, f)
+			configset.setFilter(api.scope.current, f)
+		end
 
 		return c
 	end)
