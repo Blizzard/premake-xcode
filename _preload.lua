@@ -29,4 +29,4 @@
 		description = "Output the raw solution hierarchy in addition to the project file"
 	}
 
-	dofile("xcode_api.lua")
+	include("xcode_api.lua")
