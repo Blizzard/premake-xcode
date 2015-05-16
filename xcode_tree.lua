@@ -103,6 +103,7 @@
 			prjT.targetDependencyId     = xcode6.newid(prj.name, 'PBXTargetDependency')
 			prjT.sourcesBuildPhaseId    = xcode6.newid(prj.name, 'PBXSourcesBuildPhase')
 			prjT.productGroupId         = xcode6.newid(prj.name, 'project', 'PBXGroup')
+			prjT.resBuildPhaseId		= xcode6.newid(prj.name, 'PBXResourceBuildPhase')
 			prjT.dependencies           = project.getdependencies(prj)
 			prjT.frameworks             = {}
 			prjT.product                = productT
@@ -142,7 +143,7 @@
 				fcfg.fileConfig     = fcfg -- allows getting fcfg from fcfgT
 				fcfg.solution       = sln
 				fcfg.relpath        = path.getrelative(sln.location, fcfg.abspath)
-				fcfg.id             = xcode6.newid(fcfg.abspath, "PBXFileReference")
+				fcfg.id             = xcode6.newid(prj.name, fcfg.abspath, "PBXFileReference")
 				fcfg.fileType       = xcode6.getFileType(fcfg.abspath)
 				fcfg.isResource     = xcode6.isItemResource(prj, fcfg)
 				fcfg.buildCategory  = xcode6.getBuildCategory(fcfg.abspath)
@@ -167,6 +168,48 @@
                     node.fileConfig.xcodeNode = node
 			    end
 		    })
+
+			-- add localized and non-localized resources
+			prj.resourceIds = { }
+			local resT = tree.new("Resources")
+			table.foreachi(prj.xcode_resources, function(res)
+				local respath, lproj, loc, item = res:match('^(.*)/(([%w_%-]+)%.lproj)/(.*)$')
+				respath = solution.getrelative(sln, respath or res)
+				if lproj then
+					local key = path.join(respath, item)
+					local parent = tree.add(resT, key, { kind = 'group' })
+					if not parent.id then
+						xcode6.setProductGroupId(parent)
+						parent.relpath = key
+						parent.kind = 'variant'
+						parent.id = xcode6.newid(key, 'PBXVariantGroup')
+						parent.buildId = xcode6.newid(key, 'PBXBuildFile')
+						parent.buildCategory = xcode6.getBuildCategory(key)
+						table.insert(prj.resourceIds, { id = parent.buildId, name = item })
+					end
+
+					local node = tree.add(parent, loc)
+					node.relpath = path.join(lproj, item)
+					node.kind = 'fileConfig'
+					node.id = xcode6.newid(path.join(respath, lproj, item, 'PBXFileReference'))
+					node.fileType = xcode6.getFileType(item)
+				else
+					local parent = tree.add(resT, path.getdirectory(respath), { kind = 'group' })
+					xcode6.setProductGroupId(parent)
+					local node = tree.add(parent, path.getname(respath))
+					node.relpath = respath
+					node.kind = 'fileConfig'
+					node.id = xcode6.newid(respath, 'PBXFileReference')
+					node.buildId = xcode6.newid(respath, 'PBXBuildFile')
+					node.fileType = xcode6.getFileType(respath)
+					table.insert(prj.resourceIds, { id = node.buildId, name = path.getname(respath) })
+				end
+			end)
+
+			if #resT.children > 0 then
+				tree.trimroot(resT)
+				tree.insert(prjT, resT)
+			end
 
 			-- add configs to project.
 			prjT.configList = tree.new(prj.name)

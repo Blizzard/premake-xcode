@@ -77,6 +77,7 @@
 			[".icns"] = "Resources",
 			[".s"] = "Sources",
 			[".S"] = "Sources",
+			[".txt"] = "Resources"
 		}
 		return categories[path.getextension(filename)]
 	end

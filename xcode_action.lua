@@ -95,7 +95,7 @@
 
         local files = { }
         premake.tree.traverse(tree, {
-            onleaf = function(node)
+            onnode = function(node)
                 if node.buildId then
                     table.insert(files, node)
                 end
@@ -175,13 +175,13 @@
         table.sort(entries, function(a, b) return a.id < b.id end)
         for _, node in ipairs(entries) do
             if node.kind == 'fileConfig' then
-                _p(2,'%s /* %s */ = {isa = PBXFileReference; lastKnownFileType = %s; name = %s; path = %s; sourceTree = "<group>"; };',
+                _p(2, '%s /* %s */ = {isa = PBXFileReference; lastKnownFileType = %s; name = %s; path = %s; sourceTree = "<group>"; };',
                     node.id, node.name, xcode6.quoted(node.fileType), xcode6.quoted(node.name), xcode6.quoted(node.relpath))
             elseif node.kind == 'link' then
-                _p(2,'%s /* %s */ = {isa = PBXFileReference; lastKnownFileType = %s; name = %s; path = %s; sourceTree = %s; };',
+                _p(2, '%s /* %s */ = {isa = PBXFileReference; lastKnownFileType = %s; name = %s; path = %s; sourceTree = %s; };',
                     node.id, node.name, xcode6.quoted(node.fileType), xcode6.quoted(node.name), xcode6.quoted(node.path), xcode6.quoted(node.sourceTree))
             elseif node.kind == 'product' then
-                _p(2,'%s /* %s */ = {isa = PBXFileReference; explicitFileType = %s; includeInIndex = 0; path = %s; sourceTree = BUILT_PRODUCTS_DIR; };',
+                _p(2, '%s /* %s */ = {isa = PBXFileReference; explicitFileType = %s; includeInIndex = 0; path = %s; sourceTree = BUILT_PRODUCTS_DIR; };',
                     node.id, node.name, node.targetType, xcode6.quoted(node.name))
             end
 		end
@@ -242,7 +242,7 @@
 		premake.tree.traverse(tree, {
 			onnode = function(node)
 				-- Skip over anything that isn't a group
-				if node.kind == 'fileConfig' or node.kind == 'vgroup' or #node.children <= 0 then
+				if node.kind == 'fileConfig' or node.kind == 'variant' or #node.children <= 0 then
 					return
 				end
 
@@ -251,7 +251,7 @@
 					_p(3,'isa = PBXGroup;')
 					_p(3,'children = (')
 					for _, childnode in ipairs(node.children) do
-						if childnode.kind == 'fileConfig' or childnode.kind == 'link' or childnode.kind == 'product' then
+						if childnode.kind == 'fileConfig' or childnode.kind == 'link' or childnode.kind == 'product' or childnode.kind == 'variant' then
 							_p(4,'%s /* %s */,', childnode.id, childnode.name)
 						else
 							_p(4,'%s /* %s */,', childnode.productGroupId, childnode.name)
@@ -319,6 +319,10 @@
 
 			if entry.frameworkBuildPhaseId then
 				_p(4, '%s /* Frameworks */,', entry.frameworkBuildPhaseId)
+			end
+
+			if #entry.project.resourceIds > 0 then
+				_p(4, '%s /* Resources */,', entry.resBuildPhaseId)
 			end
 
 			if #entry.postbuild > 0 then
@@ -391,11 +395,36 @@
 
 
 	function xcode6.PBXResourcesBuildPhase(tree)
-		_p('')
-		_p('/* Begin PBXResourcesBuildPhase section */')
+		local entries = { }
+		for prj in solution.eachproject(tree.solution) do
+			if #prj.resourceIds > 0 then
+				table.insert(entries, {
+					id = prj.xcodeNode.resBuildPhaseId,
+					resources = prj.resourceIds
+				})
+			end
+		end
 
+		if #entries > 0 then
+			_p('')
+			_p('/* Begin PBXResourcesBuildPhase section */')
 
-		_p('/* End PBXResourcesBuildPhase section */')
+			table.sort(entries, function(a, b) return a.id < b.id end)
+			table.foreachi(entries, function(entry)
+				_p(2, '%s /* Resources */ = {', entry.id)
+				_p(3, 'isa = PBXResourcesBuildPhase;')
+				_p(3, 'buildActionMask = 2147483647;')
+				_p(3, 'files = (')
+				table.foreachi(entry.resources, function(resource)
+					_p(4, '%s /* %s in Resources */,', resource.id, resource.name)
+				end)
+				_p(3, ');')
+				_p(3, 'runOnlyForDeploymentPostprocessing = 0;')
+				_p(2, '};')
+			end)
+
+			_p('/* End PBXResourcesBuildPhase section */')
+		end
 	end
 
 
@@ -481,7 +510,7 @@
 			_p(3, 'files = (')
 			premake.tree.traverse(entry, {
 				onleaf = function(node)
-					if node.buildId then
+					if node.buildId and xcode6.getBuildCategory(node.name) == 'Sources' then
 						_p(4,'%s /* %s in %s */,', node.buildId, node.name, node.buildCategory)
 					end
 				end})
@@ -517,11 +546,36 @@
 
 
 	function xcode6.PBXVariantGroup(tree)
-		_p('')
-		_p('/* Begin PBXVariantGroup section */')
+		local settings = {}
 
+		premake.tree.traverse(tree, {
+			onnode = function(node)
+				-- Skip over anything that isn't a variant
+				if node.kind ~= 'variant' then
+					return
+				end
 
-		_p('/* End PBXVariantGroup section */')
+				settings[node.id] = function()
+					_p(2, '%s /* %s */ = {', node.id, node.name)
+					_p(3, 'isa = PBXVariantGroup;')
+					_p(3, 'children = (')
+					table.foreachi(node.children, function(childnode)
+						_p(4, '%s /* %s */,', childnode.id, childnode.name)
+					end)
+					_p(3, ');')
+					_p(3, 'name = %s;', premake.xcode6.quoted(node.name))
+					_p(3, 'path = %s;', premake.xcode6.quoted(path.getdirectory(node.relpath)))
+					_p(3, 'sourceTree = "<group>";')
+					_p(2, '};')
+				end
+			end}, true)
+
+		if not table.isempty(settings) then
+			_p('')
+			_p('/* Begin PBXVariantGroup section */')
+			xcode6.printSettingsTable(2, settings)
+			_p('/* End PBXVariantGroup section */')
+		end
 	end
 
 
