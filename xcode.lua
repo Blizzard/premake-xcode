@@ -12,8 +12,9 @@
 	m.elements = {}
 
 	include("_preload.lua")
-	include("xcode_common.lua")
-	include("xcode4_workspace.lua")
-	include("xcode_project.lua")
+	include("xcode_action.lua")
+	include("xcode_config.lua")
+	include("xcode_tree.lua")
+	include("xcode_utils.lua")
 
 	return m

@@ -1,7 +1,8 @@
 return {
 	"_preload.lua",
 	"xcode.lua",
-	"xcode4_workspace.lua",
-	"xcode_common.lua",
-	"xcode_project.lua",
+	"xcode_action.lua",
+	"xcode_config.lua",
+	"xcode_tree.lua",
+	"xcode_utils.lua"
 }
