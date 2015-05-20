@@ -34,6 +34,15 @@
 	}
 
 
+	-- List of all links that are optional.	 Each item must also appear in a links command.
+	api.register {
+		name = "xcode_weaklinks",
+		scope = "config",
+		kind = "list:mixed",
+		tokens = true
+	}
+
+
 	premake.override(_G, "icon", function(base, name)
 		local c = base(name)
 

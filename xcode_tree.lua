@@ -74,21 +74,21 @@
 			--- first, save and remove special items
 			local specials = { }
 			for n = #prj._.files, 1, -1 do
-			    local fcfg = prj._.files[n]
-                if fcfg.vpath ~= fcfg.relpath then
-                    table.insert(specials, fcfg)
-                    table.remove(prj._.files, n)
-                end
+				local fcfg = prj._.files[n]
+				if fcfg.vpath ~= fcfg.relpath then
+					table.insert(specials, fcfg)
+					table.remove(prj._.files, n)
+				end
 			end
 
-            --- next, construct the source tree as usual
+			--- next, construct the source tree as usual
 			local prjT = project.getsourcetree(prj)
 
 			--- re-insert the specials
 			prj._.files = table.join(specials, prj._.files)
 			table.foreachi(specials, function(fcfg)
-                local node = tree.add(prjT, fcfg.vpath)
-                setmetatable(node, { __index = fcfg })
+				local node = tree.add(prjT, fcfg.vpath)
+				setmetatable(node, { __index = fcfg })
 			end)
 
 			local group = tree.add(slnT, path.join('Targets', prj.group), { kind = 'group' } )
@@ -114,30 +114,30 @@
 			prj.xcodeNode               = prjT
 
 			if #prj.links > 0 then
-			    prjT.frameworkBuildPhaseId = xcode6.newid(prj.name, 'PBXFrameworksBuildPhase')
+				prjT.frameworkBuildPhaseId = xcode6.newid(prj.name, 'PBXFrameworksBuildPhase')
 			end
 
-            -- configure custom commands
-            table.foreachi(prj.prebuildcommands, function(cmd)
-                table.insert(prjT.prebuild, {
-                    id = xcode6.newid(tostring(prj.prebuildcommands), cmd),
-                    cmd = os.translateCommands(cmd)
-                })
-            end)
+			-- configure custom commands
+			table.foreachi(prj.prebuildcommands, function(cmd)
+				table.insert(prjT.prebuild, {
+					id = xcode6.newid(tostring(prj.prebuildcommands), cmd),
+					cmd = os.translateCommands(cmd)
+				})
+			end)
 
-            table.foreachi(prj.prelinkcommands, function(cmd)
-                table.insert(prjT.prelink, {
-                    id = xcode6.newid(tostring(prj.prelinkcommands), cmd),
-                    cmd = os.translateCommands(cmd)
-                })
-            end)
+			table.foreachi(prj.prelinkcommands, function(cmd)
+				table.insert(prjT.prelink, {
+					id = xcode6.newid(tostring(prj.prelinkcommands), cmd),
+					cmd = os.translateCommands(cmd)
+				})
+			end)
 
-            table.foreachi(prj.postbuildcommands, function(cmd)
-                table.insert(prjT.postbuild, {
-                    id = xcode6.newid(tostring(prj.postbuildcommands), cmd),
-                    cmd = os.translateCommands(cmd)
-                })
-            end)
+			table.foreachi(prj.postbuildcommands, function(cmd)
+				table.insert(prjT.postbuild, {
+					id = xcode6.newid(tostring(prj.postbuildcommands), cmd),
+					cmd = os.translateCommands(cmd)
+				})
+			end)
 
 			-- configure file settings.
 			table.foreachi(prj._.files, function(fcfg)
@@ -155,20 +155,20 @@
 			end)
 
 			tree.traverse(prjT, {
-			    onbranch = function(node)
-			        node.kind = 'group'
-				    xcode6.setProductGroupId(node)
-			    end,
-			    onleaf = function(node)
-                    node.kind = 'fileConfig'
+				onbranch = function(node)
+					node.kind = 'group'
+					xcode6.setProductGroupId(node)
+				end,
+				onleaf = function(node)
+					node.kind = 'fileConfig'
 
-                    if string.endswith(node.abspath, "Info.plist") then
-                        prjT.infoplist = node
-                    end
+					if string.endswith(node.abspath, "Info.plist") then
+						prjT.infoplist = node
+					end
 
-                    node.fileConfig.xcodeNode = node
-			    end
-		    })
+					node.fileConfig.xcodeNode = node
+				end
+			})
 
 			-- add localized and non-localized resources
 			prj.resourceIds = { }
@@ -228,7 +228,7 @@
 				cfg.xcodeNode = cfgT
 
 				local links = premake.config.getlinks(cfg, "system", "fullpath")
-				for _, link in ipairs(links) do
+				table.foreachi(links, function(link)
 					local name = path.getname(link)
 					local linkT = frameworks.children[name] or libraries.children[name]
 					if not linkT then
@@ -261,6 +261,13 @@
 						end
 					end
 
+					if cfg.xcode_weaklinks and #cfg.xcode_weaklinks > 0 and
+						cfg.xcode_weaklinks[path.getabsolute(path.rebase(link, prj.location, '.'))] then
+						linkT.xcode_file_settings = {
+							ATTRIBUTES = '(Weak, )'
+						}
+					end
+
 					if path.isframework(name) then
 						if not table.contains(prjT.frameworks, linkT) then
 							table.insert(prjT.frameworks, linkT)
@@ -268,7 +275,7 @@
 					else
 						table.insert(cfgT.links, linkT)
 					end
-				end
+				end)
 			end
 		end
 
