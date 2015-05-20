@@ -105,6 +105,7 @@
 			prjT.productGroupId         = xcode6.newid(prj.name, 'project', 'PBXGroup')
 			prjT.resBuildPhaseId		= xcode6.newid(prj.name, 'PBXResourceBuildPhase')
 			prjT.dependencies           = project.getdependencies(prj)
+			prjT.linkdeps               = project.getdependencies(prj, 'linkOnly')
 			prjT.frameworks             = {}
 			prjT.product                = productT
 			prjT.prebuild               = {}
@@ -112,7 +113,7 @@
 			prjT.postbuild              = {}
 			prj.xcodeNode               = prjT
 
-			if #prjT.dependencies > 0 then
+			if #prj.links > 0 then
 			    prjT.frameworkBuildPhaseId = xcode6.newid(prj.name, 'PBXFrameworksBuildPhase')
 			end
 
