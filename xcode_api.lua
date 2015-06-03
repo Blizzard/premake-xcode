@@ -19,7 +19,7 @@
 
 
 	api.register {
-		name = "xcode_file_settings",
+		name = "xcode_filesettings",
 		scope = "config",
 		kind = "keyed:mixed",
 		tokens = true
@@ -42,6 +42,21 @@
 		tokens = true
 	}
 
+
+	api.register {
+		name = "xcode_frameworkdirs",
+		scope = "config",
+		kind = "list:directory",
+		tokens = true
+	}
+
+
+	api.register {
+		name = "xcode_runpathdirs",
+		scope = "config",
+		kind = "list:string",
+		tokens = true
+	}
 
 	premake.override(_G, "icon", function(base, name)
 		local c = base(name)

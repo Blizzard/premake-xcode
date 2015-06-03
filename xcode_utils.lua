@@ -134,63 +134,36 @@
 	end
 
 
-	function premake.xcode6.getFrameworkDirs(cfgT)
+	function premake.xcode6.getFrameworkDirs(cfg)
 		local done = {}
 		local dirs = {}
 
-		if not cfgT.project then
-			return dirs
+		if cfg.project then
+			table.foreachi(cfg.links, function(link)
+				if link:find('.framework$') and path.isabsolute(link) then
+					local dir = solution.getrelative(cfg.solution, path.getdirectory(link))
+					if not done[dir] then
+						table.insert(dirs, dir)
+						done[dir] = true
+					end
+				end
+			end)
 		end
 
-		for _, linkT in ipairs(cfgT.project.xcodeNode.frameworks) do
-			if linkT.sourceTree == 'SOURCE_ROOT' then
-				local dir = path.getdirectory(linkT.path)
-				if #dir > 1 and not done[dir] then
-					done[dir] = true
-					table.insert(dirs, dir)
+		if cfg.xcode_frameworkdirs then
+			table.foreachi(cfg.xcode_frameworkdirs, function(dir)
+				if path.isabsolute(dir) then
+					dir = solution.getrelative(cfg.solution, dir)
 				end
-			end
+				if not done[dir] then
+					table.insert(dirs, dir)
+					done[dir] = true
+				end
+			end)
 		end
+
 		return dirs
 	end
-
-	function premake.xcode6.getFrameworkPath(nodePath)
-		--respect user supplied paths
-		-- look for special variable-starting paths for different sources
-		local _, matchEnd, variable = string.find(nodePath, "^%$%((.+)%)/")
-		if variable then
-			-- by skipping the last '/' we support the same absolute/relative
-			-- paths as before
-			nodePath = string.sub(nodePath, matchEnd + 1)
-		end
-
-		if string.find(nodePath,'/')  then
-			if string.find(nodePath,'^%.') then
-				pth = nodePath
-				src = "SOURCE_ROOT"
-				variable = src
-			else
-				pth = nodePath
-				src = "<absolute>"
-			end
-		end
-
-		-- if it starts with a variable, use that as the src instead
-		if variable then
-			src = variable
-			-- if we are using a different source tree, it has to be relative
-			-- to that source tree, so get rid of any leading '/'
-			if string.find(pth, '^/') then
-				pth = string.sub(pth, 2)
-			end
-		else
-		    pth = "System/Library/Frameworks/" .. nodePath
-			src = "SDKROOT"
-		end
-
-		return pth, src
-	end
-
 
 	local escapeSpecialChars = {
 		['\n'] = '\\n',
