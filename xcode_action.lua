@@ -590,16 +590,16 @@
 			settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++0x'
 		end
 
-		if cfg.flags.NoExceptions then
+		if not cfg.exceptionhandling then
 			settings['GCC_ENABLE_CPP_EXCEPTIONS'] = 'NO'
 			settings['GCC_ENABLE_OBJC_EXCEPTIONS'] = 'NO'
 		end
 
-		if cfg.flags.NoRTTI then
+		if not cfg.rtti then
 			settings['GCC_ENABLE_CPP_RTTI'] = 'NO'
 		end
 
-		if cfg.flags.Symbols and not cfg.flags.NoEditAndContinue then
+		if cfg.flags.Symbols and cfg.editandcontinue then
 			settings['GCC_ENABLE_FIX_AND_CONTINUE'] = 'YES'
 		end
 
