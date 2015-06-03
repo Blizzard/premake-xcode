@@ -19,7 +19,7 @@
 
 
 	api.register {
-		name = "xcode_file_settings",
+		name = "xcode_filesettings",
 		scope = "config",
 		kind = "keyed:mixed",
 		tokens = true
@@ -33,6 +33,30 @@
 		tokens = true
 	}
 
+
+	-- List of all links that are optional.	 Each item must also appear in a links command.
+	api.register {
+		name = "xcode_weaklinks",
+		scope = "config",
+		kind = "list:mixed",
+		tokens = true
+	}
+
+
+	api.register {
+		name = "xcode_frameworkdirs",
+		scope = "config",
+		kind = "list:directory",
+		tokens = true
+	}
+
+
+	api.register {
+		name = "xcode_runpathdirs",
+		scope = "config",
+		kind = "list:string",
+		tokens = true
+	}
 
 	premake.override(_G, "icon", function(base, name)
 		local c = base(name)
