@@ -607,10 +607,14 @@
 		settings['GCC_WARN_UNUSED_VARIABLE'] = 'YES'
 
 		if cfg.architecture == 'x86' then
-			settings['ARCHS'] = 'i386'
+			settings['ARCHS'] = '$(ARCHS_STANDARD_32_BIT)'
 		elseif cfg.architecture == 'x86_64' then
-			settings['ARCHS'] = 'x86_64'
+			settings['ARCHS'] = '$(ARCHS_STANDARD_64_BIT)'
+		elseif cfg.architecture == 'universal' then
+			settings['ARCHS'] = '$(ARCHS_STANDARD_32_64_BIT)'
 		end
+
+		settings['SDKROOT'] = 'macosx'
 
 		if #cfg.includedirs > 0 then
 			settings['HEADER_SEARCH_PATHS']		 = table.join('$(inherited)', solution.getrelative(sln, cfg.includedirs))
