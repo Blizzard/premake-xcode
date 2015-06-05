@@ -587,8 +587,8 @@
 			settings['GCC_ENABLE_FIX_AND_CONTINUE'] = 'YES'
 		end
 
-		local optimizeMap = { On = 3, Size = 's', Speed = 3, Full = 'fast', Debug = 1 }
-		settings['GCC_OPTIMIZATION_LEVEL'] = optimizeMap[cfg.optimize] or 0
+		local optimizeMap = { Off = 0, Debug = 1, On = 2, Speed = 3, Size = 's', Full = 'fast' }
+		settings['GCC_OPTIMIZATION_LEVEL'] = optimizeMap[cfg.optimize] or nil
 
 		if cfg.pchheader and not cfg.flags.NoPCH then
 			settings['GCC_PRECOMPILE_PREFIX_HEADER'] = 'YES'
@@ -645,7 +645,6 @@
 			settings['CONFIGURATION_BUILD_DIR']	 = solution.getrelative(sln, cfg.buildtarget.directory)
 			settings['PRODUCT_NAME']			 = cfg.buildtarget.basename
 		else
-			settings["GCC_SYMBOLS_PRIVATE_EXTERN"] = 'NO'
 			settings['USE_HEADERMAP']			 = 'NO'
 		end
 
