@@ -71,6 +71,8 @@
 			return xcode6.quoted(obj)
 		elseif type(obj) == 'number' then
 			return tostring(obj)
+		elseif type(obj) == 'boolean' then
+			return obj and 'YES' or 'NO'
 		elseif not expand and obj._id then
 			return obj._comment and string.format("%s /* %s */", obj._id, obj._comment) or obj._id
 		else
