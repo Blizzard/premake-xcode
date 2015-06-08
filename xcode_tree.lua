@@ -661,7 +661,11 @@
 				table.insert(flags, flag)
 			end
 		end
-		settings['OTHER_CFLAGS'] = table.join(flags, cfg.buildoptions)
+
+		local nowarn = table.translate(cfg.disablewarnings or { }, function(warning)
+			return '-Wno-' .. warning
+		end)
+		settings['OTHER_CFLAGS'] = table.join(flags, cfg.buildoptions, nowarn)
 		settings['OTHER_LDFLAGS'] = table.join(flags, cfg.linkoptions)
 
 		if cfg.warnings == "Extra" then
