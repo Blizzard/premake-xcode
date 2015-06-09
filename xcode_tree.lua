@@ -273,12 +273,14 @@
 		table.foreachi(prj.files, function(file)
 			local node = tree.add(files, solution.getrelative(sln, file), { kind = 'group' })
 			node.kind = 'file'
-			local settings = prj._.files[file].xcode_filesettings
-			node.settings = next(settings) and settings
-			local category = xcode6.getBuildCategory(node.name)
-			node.category = category
-			node.action = category == 'Sources' and 'build' or
-				category == 'Resources' and 'copy' or nil
+			if file ~= prj.icon then -- icons handled elsewhere
+				local settings = prj._.files[file].xcode_filesettings
+				node.settings = next(settings) and settings
+				local category = xcode6.getBuildCategory(node.name)
+				node.category = category
+				node.action = category == 'Sources' and 'build' or
+					category == 'Resources' and 'copy' or nil
+			end
 		end)
 		table.foreachi(prj.xcode_resources, function(file)
 			file = solution.getrelative(sln, file)
@@ -661,7 +663,11 @@
 				table.insert(flags, flag)
 			end
 		end
-		settings['OTHER_CFLAGS'] = table.join(flags, cfg.buildoptions)
+
+		local nowarn = table.translate(cfg.disablewarnings or { }, function(warning)
+			return '-Wno-' .. warning
+		end)
+		settings['OTHER_CFLAGS'] = table.join(flags, cfg.buildoptions, nowarn)
 		settings['OTHER_LDFLAGS'] = table.join(flags, cfg.linkoptions)
 
 		if cfg.warnings == "Extra" then
