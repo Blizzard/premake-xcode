@@ -576,17 +576,13 @@
 			settings['CLANG_CXX_LIBRARY'] = 'libc++'
 		end
 
-		if not cfg.exceptionhandling then
-			settings['GCC_ENABLE_CPP_EXCEPTIONS'] = 'NO'
-			settings['GCC_ENABLE_OBJC_EXCEPTIONS'] = 'NO'
-		end
+		local booleanMap = { On = 'YES', Off = 'NO' }
+		settings['GCC_ENABLE_CPP_EXCEPTIONS']  = booleanMap[cfg.exceptionhandling] or nil
+		settings['GCC_ENABLE_OBJC_EXCEPTIONS'] = booleanMap[cfg.exceptionhandling] or nil
+		settings['GCC_ENABLE_CPP_RTTI']        = booleanMap[cfg.rtti] or nil
 
-		if not cfg.rtti then
-			settings['GCC_ENABLE_CPP_RTTI'] = 'NO'
-		end
-
-		if cfg.flags.Symbols and cfg.editandcontinue then
-			settings['GCC_ENABLE_FIX_AND_CONTINUE'] = 'YES'
+		if cfg.flags.Symbols then
+			settings['GCC_ENABLE_FIX_AND_CONTINUE'] = booleanMap[cfg.editandcontinue] or nil
 		end
 
 		local optimizeMap = { Off = 0, Debug = 1, On = 2, Speed = 3, Size = 's', Full = 'fast' }
