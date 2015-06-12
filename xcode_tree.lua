@@ -646,6 +646,8 @@
 			settings['USE_HEADERMAP']			 = 'NO'
 		end
 
+		settings['EXECUTABLE_PREFIX'] = cfg.targetprefix
+
 		-- build list of "other" C/C++ flags
 		local checks = {
 			["-ffast-math"]			 = cfg.flags.FloatFast,
