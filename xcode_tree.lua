@@ -6,6 +6,7 @@
 
 	local api      = premake.api
 	local config   = premake.config
+	local context  = premake.context
 	local xcode6   = premake.xcode6
 	local project  = premake.project
 	local solution = premake.solution
@@ -568,114 +569,138 @@
 		local prj = cfg.project
 		local settings = { }
 
-		if cfg.flags['C++14'] then
-			settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++14'
-			settings['CLANG_CXX_LIBRARY'] = 'libc++'
-		elseif cfg.flags['C++11'] then
-			settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++0x'
-			settings['CLANG_CXX_LIBRARY'] = 'libc++'
-		end
-
-		local booleanMap = { On = 'YES', Off = 'NO' }
-		settings['GCC_ENABLE_CPP_EXCEPTIONS']  = booleanMap[cfg.exceptionhandling] or nil
-		settings['GCC_ENABLE_OBJC_EXCEPTIONS'] = booleanMap[cfg.exceptionhandling] or nil
-		settings['GCC_ENABLE_CPP_RTTI']        = booleanMap[cfg.rtti] or nil
-
-		if cfg.flags.Symbols then
-			settings['GCC_ENABLE_FIX_AND_CONTINUE'] = booleanMap[cfg.editandcontinue] or nil
-		end
-
+		local booleanMap = { On = true, Off = false }
 		local optimizeMap = { Off = 0, Debug = 1, On = 2, Speed = 3, Size = 's', Full = 'fast' }
-		settings['GCC_OPTIMIZATION_LEVEL'] = optimizeMap[cfg.optimize] or nil
 
-		if cfg.pchheader and not cfg.flags.NoPCH then
-			settings['GCC_PRECOMPILE_PREFIX_HEADER'] = 'YES'
-			settings['GCC_PREFIX_HEADER'] = solution.getrelative(sln, path.join(prj.basedir, cfg.pchsource or cfg.pchheader))
+		local flags = xcode6.fetchlocal(cfg, 'flags')
+		local exceptionhandling = xcode6.fetchlocal(cfg, 'exceptionhandling')
+		local rtti = xcode6.fetchlocal(cfg, 'rtti')
+		local editandcontinue = xcode6.fetchlocal(cfg, 'editandcontinue')
+		local optimize = xcode6.fetchlocal(cfg, 'optimize')
+		local pchsource = xcode6.fetchlocal(cfg, 'pchsource')
+		local pchheader = xcode6.fetchlocal(cfg, 'pchheader')
+		local defines = xcode6.fetchlocal(cfg, 'defines')
+		local architecture = xcode6.fetchlocal(cfg, 'architecture')
+		local includedirs = xcode6.fetchlocal(cfg, 'includedirs')
+		local libdirs = xcode6.fetchlocal(cfg, 'libdirs')
+		local runpathdirs = xcode6.fetchlocal(cfg, 'xcode_runpathdirs')
+		local targetprefix = xcode6.fetchlocal(cfg, 'targetprefix')
+		local disablewarnings = xcode6.fetchlocal(cfg, 'disablewarnings')
+		local buildoptions = xcode6.fetchlocal(cfg, 'buildoptions')
+		local linkoptions = xcode6.fetchlocal(cfg, 'linkoptions')
+		local warnings = xcode6.fetchlocal(cfg, 'warnings')
+		local xcode_settings = xcode6.fetchlocal(cfg, 'xcode_settings')
+
+		local checkflags = { }
+		if flags then
+			if flags['C++14'] then
+				settings.CLANG_CXX_LANGUAGE_STANDARD = 'c++14'
+				settings.CLANG_CXX_LIBRARY = 'libc++'
+			elseif flags['C++11'] then
+				settings.CLANG_CXX_LANGUAGE_STANDARD = 'c++0x'
+				settings.CLANG_CXX_LIBRARY = 'libc++'
+			end
+
+			if flags.Symbols then
+				settings.GCC_ENABLE_FIX_AND_CONTINUE = booleanMap[editandcontinue]
+			end
+
+			if flags.FatalWarnings then
+				settings.GCC_TREAT_WARNINGS_AS_ERRORS = true
+			end
+
+			-- build list of "other" C/C++ flags
+			local checks = {
+				["-ffast-math"]			 = flags.FloatFast,
+				["-ffloat-store"]		 = flags.FloatStrict,
+				["-fomit-frame-pointer"] = flags.NoFramePointer,
+			}
+
+			for flag, check in pairs(checks) do
+				if check then
+					table.insert(checkflags, flag)
+				end
+			end
 		end
 
-		if cfg.defines and #cfg.defines > 0 then
-			settings['GCC_PREPROCESSOR_DEFINITIONS'] = table.join('$(inherited)', premake.esc(cfg.defines))
+		settings.GCC_ENABLE_CPP_EXCEPTIONS  = booleanMap[exceptionhandling]
+		settings.GCC_ENABLE_OBJC_EXCEPTIONS = booleanMap[exceptionhandling]
+		settings.GCC_ENABLE_CPP_RTTI        = booleanMap[rtti]
+
+		settings.GCC_OPTIMIZATION_LEVEL = optimizeMap[optimize]
+
+		if pchheader and not (flags and flags.NoPCH) then
+			settings.GCC_PRECOMPILE_PREFIX_HEADER = true
+			settings.GCC_PREFIX_HEADER = solution.getrelative(sln, path.join(prj.basedir, pchsource or pchheader))
 		end
 
-		if cfg.flags.FatalWarnings then
-			settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'YES'
+		if defines and #defines > 0 then
+			settings.GCC_PREPROCESSOR_DEFINITIONS = table.join('$(inherited)', premake.esc(defines))
 		end
 
-		settings['GCC_WARN_ABOUT_RETURN_TYPE'] = 'YES'
-		settings['GCC_WARN_UNUSED_VARIABLE'] = 'YES'
-
-		if cfg.architecture == 'x86' then
-			settings['ARCHS'] = '$(ARCHS_STANDARD_32_BIT)'
-		elseif cfg.architecture == 'x86_64' then
-			settings['ARCHS'] = '$(ARCHS_STANDARD_64_BIT)'
-		elseif cfg.architecture == 'universal' then
-			settings['ARCHS'] = '$(ARCHS_STANDARD_32_64_BIT)'
+		if architecture == 'x86' then
+			settings.ARCHS = '$(ARCHS_STANDARD_32_BIT)'
+		elseif architecture == 'x86_64' then
+			settings.ARCHS = '$(ARCHS_STANDARD_64_BIT)'
+		elseif architecture == 'universal' then
+			settings.ARCHS = '$(ARCHS_STANDARD_32_64_BIT)'
 		end
 
-		settings['SDKROOT'] = 'macosx'
-
-		if #cfg.includedirs > 0 then
-			settings['HEADER_SEARCH_PATHS']		 = table.join('$(inherited)', solution.getrelative(sln, cfg.includedirs))
+		if includedirs and #includedirs > 0 then
+			settings.HEADER_SEARCH_PATHS		 = table.join('$(inherited)', solution.getrelative(sln, includedirs))
 		end
 
 		-- get libdirs and links
-		local libdirs = solution.getrelative(sln, cfg.libdirs)
-		if prj then
-			libdirs = table.join(table.translate(config.getlinks(cfg, 'siblings', 'directory', nil), function(s)
-				return path.rebase(s, prj.location, sln.location)
-			end), libdirs)
-		end
-		if #libdirs > 0 then
-			settings['LIBRARY_SEARCH_PATHS'] = table.unique(table.join('$(inherited)', libdirs))
+		if libdirs then
+			libdirs = solution.getrelative(sln, libdirs)
+			if prj then
+				libdirs = table.join(table.translate(config.getlinks(cfg, 'siblings', 'directory', nil), function(s)
+					return path.rebase(s, prj.location, sln.location)
+				end), libdirs)
+			end
+			if #libdirs > 0 then
+				settings.LIBRARY_SEARCH_PATHS = table.unique(table.join('$(inherited)', libdirs))
+			end
 		end
 
 		local fwdirs = xcode6.getFrameworkDirs(cfg)
 		if fwdirs and #fwdirs > 0 then
-			settings['FRAMEWORK_SEARCH_PATHS']	 = table.join('$(inherited)', fwdirs)
+			settings.FRAMEWORK_SEARCH_PATHS = table.join('$(inherited)', fwdirs)
 		end
 
-		if cfg.xcode_runpathdirs and #cfg.xcode_runpathdirs > 0 then
-			settings['LD_RUNPATH_SEARCH_PATHS'] = cfg.xcode_runpathdirs
+		if runpathdirs and #runpathdirs > 0 then
+			settings.LD_RUNPATH_SEARCH_PATHS = runpathdirs
 		end
 
 		if prj then
-			settings['OBJROOT']					 = solution.getrelative(sln, cfg.objdir)
-			settings['CONFIGURATION_BUILD_DIR']	 = solution.getrelative(sln, cfg.buildtarget.directory)
-			settings['PRODUCT_NAME']			 = cfg.buildtarget.basename
+			settings.OBJROOT					= solution.getrelative(sln, cfg.objdir)
+			settings.CONFIGURATION_BUILD_DIR	= solution.getrelative(sln, cfg.buildtarget.directory)
+			settings.PRODUCT_NAME				= cfg.buildtarget.basename
 		else
-			settings['USE_HEADERMAP']			 = 'NO'
+			settings.SDKROOT					= 'macosx'
+			settings.USE_HEADERMAP				= false
+			settings.GCC_WARN_ABOUT_RETURN_TYPE	= true
+			settings.GCC_WARN_UNUSED_VARIABLE 	= true
 		end
 
-		settings['EXECUTABLE_PREFIX'] = cfg.targetprefix
+		settings.EXECUTABLE_PREFIX = targetprefix
 
-		-- build list of "other" C/C++ flags
-		local checks = {
-			["-ffast-math"]			 = cfg.flags.FloatFast,
-			["-ffloat-store"]		 = cfg.flags.FloatStrict,
-			["-fomit-frame-pointer"] = cfg.flags.NoFramePointer,
-		}
-
-		local flags = { }
-		for flag, check in pairs(checks) do
-			if check then
-				table.insert(flags, flag)
-			end
-		end
-
-		local nowarn = table.translate(cfg.disablewarnings or { }, function(warning)
+		local nowarn = table.translate(disablewarnings or { }, function(warning)
 			return '-Wno-' .. warning
 		end)
-		settings['OTHER_CFLAGS'] = table.join(flags, cfg.buildoptions, nowarn)
-		settings['OTHER_LDFLAGS'] = table.join(flags, cfg.linkoptions)
+		local cflags = table.join(checkflags, buildoptions, nowarn)
+		local ldflags = table.join(checkflags, linkoptions)
+		settings.OTHER_CFLAGS = #cflags > 0 and table.join('$(inherited)', cflags) or nil
+		settings.OTHER_LDFLAGS = #ldflags > 0 and table.join('$(inherited)', ldflags) or nil
 
-		if cfg.warnings == "Extra" then
-			settings['WARNING_CFLAGS'] = '-Wall'
-		elseif cfg.warnings == "Off" then
-			settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
+		if warnings == 'Extra' then
+			settings.WARNING_CFLAGS = '-Wall'
+		elseif warnings == 'Off' then
+			settings.GCC_WARN_INHIBIT_ALL_WARNINGS = true
 		end
 
-		if cfg.xcode_settings then
-			settings = table.merge(settings, cfg.xcode_settings)
+		if xcode_settings then
+			settings = table.merge(settings, xcode_settings)
 		end
 
 		return settings

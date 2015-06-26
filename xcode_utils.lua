@@ -4,18 +4,19 @@
 -- Copyright (c) 2015 Blizzard Entertainment
 --
 	local api      = premake.api
+	local context  = premake.context
 	local xcode6   = premake.xcode6
 	local project  = premake.project
 	local solution = premake.solution
 
 
-	function premake.xcode6.newid(...)
+	function xcode6.newid(...)
 		local name = table.concat({...}, ';');
 		return string.sub(name:sha1(), 1, 24)
 	end
 
 
-	function premake.xcode6.getFileType(filename)
+	function xcode6.getFileType(filename)
 		local types = {
 			[".a"]         = "archive.ar",
 			[".app"]       = "wrapper.application",
@@ -58,7 +59,7 @@
 	end
 
 
-	function premake.xcode6.getBuildCategory(filename)
+	function xcode6.getBuildCategory(filename)
 		local categories = {
 			[".a"] = "Frameworks",
 			[".app"] = "Applications",
@@ -83,7 +84,7 @@
 	end
 
 
-	function premake.xcode6.getProductType(prj)
+	function xcode6.getProductType(prj)
 		local types = {
 			ConsoleApp  = "com.apple.product-type.tool",
 			WindowedApp = "com.apple.product-type.application",
@@ -94,7 +95,7 @@
 	end
 
 
-	function premake.xcode6.getTargetType(prj)
+	function xcode6.getTargetType(prj)
 		local types = {
 			ConsoleApp  = "\"compiled.mach-o.executable\"",
 			WindowedApp = "wrapper.application",
@@ -105,7 +106,7 @@
 	end
 
 
-	function premake.xcode6.getTargetName(prj, cfg)
+	function xcode6.getTargetName(prj, cfg)
 		if prj.external then
 			return cfg.project.name
 		end
@@ -113,7 +114,7 @@
 	end
 
 
-	function premake.xcode6.isItemResource(project, node)
+	function xcode6.isItemResource(project, node)
 		local res;
 		if project and project.xcodebuildresources and type(project.xcodebuildresources) == "table" then
 			res = project.xcodebuildresources
@@ -134,7 +135,7 @@
 	end
 
 
-	function premake.xcode6.getFrameworkDirs(cfg)
+	function xcode6.getFrameworkDirs(cfg)
 		local done = {}
 		local dirs = {}
 
@@ -150,8 +151,9 @@
 			end)
 		end
 
-		if cfg.xcode_frameworkdirs then
-			table.foreachi(cfg.xcode_frameworkdirs, function(dir)
+		local frameworkdirs = xcode6.fetchlocal(cfg, 'xcode_frameworkdirs')
+		if frameworkdirs then
+			table.foreachi(frameworkdirs, function(dir)
 				if path.isabsolute(dir) then
 					dir = solution.getrelative(cfg.solution, dir)
 				end
@@ -183,22 +185,22 @@
 	end
 
 
-	function premake.xcode6.esc(value)
+	function xcode6.esc(value)
 		value = value:gsub('["\\\n\r\t]', escapeChar)
 		return value
 	end
 
 
-	function premake.xcode6.quoted(value)
+	function xcode6.quoted(value)
 		value = value..''
 		if not value:match('^[%a%d_./]+$') then
-			value = '"' .. premake.xcode6.esc(value) .. '"'
+			value = '"' .. xcode6.esc(value) .. '"'
 		end
 		return value
 	end
 
 
-	function premake.xcode6.filterEmpty(dirs)
+	function xcode6.filterEmpty(dirs)
 		return table.translate(dirs, function(val)
 			if val and #val > 0 then
 				return val
@@ -209,30 +211,58 @@
 	end
 
 
-	function premake.xcode6.printSetting(level, name, value)
+	function xcode6.printSetting(level, name, value)
 		if type(value) == 'function' then
 			value(level, name)
 		elseif type(value) ~= 'table' then
-			_p(level, '%s = %s;', premake.xcode6.quoted(name), premake.xcode6.quoted(value))
+			_p(level, '%s = %s;', xcode6.quoted(name), xcode6.quoted(value))
 		elseif #value == 1 then
-			_p(level, '%s = %s;', premake.xcode6.quoted(name), premake.xcode6.quoted(value[1]))
+			_p(level, '%s = %s;', xcode6.quoted(name), xcode6.quoted(value[1]))
 		elseif #value > 1 then
-			_p(level, '%s = (', premake.xcode6.quoted(name))
+			_p(level, '%s = (', xcode6.quoted(name))
 			for _, item in ipairs(value) do
-				_p(level + 1, '%s,', premake.xcode6.quoted(item))
+				_p(level + 1, '%s,', xcode6.quoted(item))
 			end
 			_p(level, ');')
 		end
 	end
 
 
-	function premake.xcode6.printSettingsTable(level, settings)
+	function xcode6.printSettingsTable(level, settings)
 		-- Maintain alphabetic order to be consistent
 		local keys = table.keys(settings)
 		table.sort(keys)
 		for _, k in ipairs(keys) do
-			premake.xcode6.printSetting(level, k, settings[k])
+			xcode6.printSetting(level, k, settings[k])
 		end
 	end
 
+
+	function xcode6.fetchlocal(cfg, key)
+		local prj = cfg.project
+
+		-- If it's a solution config, just fetch the value normally.
+		if not prj then
+			return cfg[key]
+		end
+
+		-- If it's a project config, then we only want values specified at the project or configuration level.
+		local field = premake.field.get(key)
+		if not field then
+			return cfg[key]
+		end
+
+		local value = nil
+		if premake.field.merges(field) then
+			value = context.fetchvalue(prj, key, true)
+			value = premake.field.merge(field, value, context.fetchvalue(cfg, key, true))
+		else
+			value = context.fetchvalue(cfg, key, true)
+			if value == nil then
+				value = context.fetchvalue(prj, key, true)
+			end
+		end
+
+		return value
+	end
 
