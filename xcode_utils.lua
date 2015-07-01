@@ -3,11 +3,13 @@
 -- Define the Apple XCode action and support functions.
 -- Copyright (c) 2015 Blizzard Entertainment
 --
-	local api      = premake.api
-	local context  = premake.context
-	local xcode6   = premake.xcode6
-	local project  = premake.project
-	local solution = premake.solution
+	local api       = premake.api
+	local configset = premake.configset
+	local context   = premake.context
+	local detoken   = premake.detoken
+	local xcode6    = premake.xcode6
+	local project   = premake.project
+	local solution  = premake.solution
 
 
 	function xcode6.newid(...)
@@ -255,14 +257,28 @@
 		local value = nil
 		if premake.field.merges(field) then
 			value = context.fetchvalue(prj, key, true)
+			value = premake.field.merge(field, value, xcode6.fetchfiltered(cfg, field, prj))
 			value = premake.field.merge(field, value, context.fetchvalue(cfg, key, true))
 		else
 			value = context.fetchvalue(cfg, key, true)
 			if value == nil then
-				value = context.fetchvalue(prj, key, true)
+				value = xcode6.fetchfiltered(cfg, field, prj)
+				if value == nil then
+					value = context.fetchvalue(prj, key, true)
+				end
 			end
 		end
 
 		return value
 	end
 
+
+	function xcode6.fetchfiltered(cfg, field, origin)
+		local prj = cfg.project
+		local value = configset.fetch(cfg._cfgset, field, cfg.terms, prj._cfgset)
+		if value and field.tokens then
+			value = detoken.expand(value, cfg.environ, field, cfg._basedir)
+		end
+
+		return value
+	end
