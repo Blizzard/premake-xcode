@@ -260,10 +260,10 @@
 		local value = nil
 		local inserted = nil
 		local removed = nil
+		local scfg = table.filter(sln.configs, function(scfg) return scfg.name == cfg.name end)[1]
 		if premake.field.removes(field) then
 			value = cfg[key]
 			if value then
-				local scfg = table.filter(sln.configs, function(scfg) return scfg.name == cfg.name end)[1]
 				local parentvalue = xcode6.fetchfiltered(scfg or sln, field, cfg.terms)
 				inserted = { }
 				removed = { }
@@ -281,7 +281,15 @@
 		elseif premake.field.merges(field) then
 			value = cfg[key]
 			if value then
-				inserted = context.fetchvalue(prj, key, true)
+				local slnvalue = context.fetchvalue(scfg or sln, key)
+				local parentvalue = xcode6.fetchfiltered(cfg, field, cfg.terms)
+				inserted = { }
+				for _, v in ipairs(parentvalue) do
+					if not slnvalue[v] then
+						table.insert(inserted, v)
+					end
+				end
+				inserted = premake.field.merge(field, inserted, context.fetchvalue(prj, key, true))
 				inserted = premake.field.merge(field, inserted, xcode6.fetchfiltered(cfg, field, cfg.terms, prj))
 				inserted = premake.field.merge(field, inserted, context.fetchvalue(cfg, key, true))
 				removed = { }
@@ -292,6 +300,13 @@
 				value = xcode6.fetchfiltered(cfg, field, cfg.terms, prj)
 				if value == nil then
 					value = context.fetchvalue(prj, key, true)
+					if value == nil then
+						local parentvalue = xcode6.fetchfiltered(cfg, field, cfg.terms)
+						local slnvalue = context.fetchvalue(scfg or sln, key)
+						if slnvalue ~= parentvalue then
+							value = parentvalue
+						end
+					end
 				end
 			end
 		end
