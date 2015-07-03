@@ -640,7 +640,7 @@
 				settings.GCC_TREAT_WARNINGS_AS_ERRORS = changedflags.FatalCompileWarnings
 			end
 			if newflags.FatalLinkWarnings or (not inheritldflags and flags.FatalLinkWarnings) then
-				linkoptions = table.join('-fatal_warnings', linkoptions)
+				linkoptions = table.join({ '-Xlinker', '-fatal_warnings' }, linkoptions)
 			end
 
 			-- build list of "other" C/C++ flags
