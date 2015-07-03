@@ -271,11 +271,13 @@
 		end
 
 		files = tree.new()
-		table.foreachi(prj.files, function(file)
-			local node = tree.add(files, solution.getrelative(sln, file), { kind = 'group' })
+		table.foreachi(prj._.files, function(file)
+			local path = file.abspath
+			local node = tree.add(files, solution.getrelative(sln, path), { kind = 'group' })
 			node.kind = 'file'
-			if file ~= prj.icon then -- icons handled elsewhere
-				local settings = prj._.files[file].xcode_filesettings
+			node.file = file
+			if path ~= prj.icon then -- icons handled elsewhere
+				local settings = file.xcode_filesettings
 				node.settings = next(settings) and settings
 				local category = xcode6.getBuildCategory(node.name)
 				node.category = category
@@ -569,54 +571,93 @@
 		local prj = cfg.project
 		local settings = { }
 
+		local dbg = prj and prj.name == 'Heroes' and cfg.name == 'DebugSlow'
+
 		local booleanMap = { On = true, Off = false }
 		local optimizeMap = { Off = 0, Debug = 1, On = 2, Speed = 3, Size = 's', Full = 'fast' }
 
-		local flags = xcode6.fetchlocal(cfg, 'flags')
+		local flags, newflags, delflags = xcode6.fetchlocal(cfg, 'flags')
 		local exceptionhandling = xcode6.fetchlocal(cfg, 'exceptionhandling')
 		local rtti = xcode6.fetchlocal(cfg, 'rtti')
 		local editandcontinue = xcode6.fetchlocal(cfg, 'editandcontinue')
 		local optimize = xcode6.fetchlocal(cfg, 'optimize')
 		local pchsource = xcode6.fetchlocal(cfg, 'pchsource')
 		local pchheader = xcode6.fetchlocal(cfg, 'pchheader')
-		local defines = xcode6.fetchlocal(cfg, 'defines')
+		local defines, newdefines, deldefines = xcode6.fetchlocal(cfg, 'defines')
 		local architecture = xcode6.fetchlocal(cfg, 'architecture')
-		local includedirs = xcode6.fetchlocal(cfg, 'includedirs')
-		local libdirs = xcode6.fetchlocal(cfg, 'libdirs')
-		local runpathdirs = xcode6.fetchlocal(cfg, 'xcode_runpathdirs')
+		local includedirs, newincludedirs, delincludedirs = xcode6.fetchlocal(cfg, 'includedirs')
+		local libdirs, newlibdirs, dellibdirs = xcode6.fetchlocal(cfg, 'libdirs')
+		local runpathdirs, newrunpathdirs, delrunpathdirs = xcode6.fetchlocal(cfg, 'xcode_runpathdirs')
 		local targetprefix = xcode6.fetchlocal(cfg, 'targetprefix')
-		local disablewarnings = xcode6.fetchlocal(cfg, 'disablewarnings')
-		local buildoptions = xcode6.fetchlocal(cfg, 'buildoptions')
-		local linkoptions = xcode6.fetchlocal(cfg, 'linkoptions')
+		local disablewarnings, newdisablewarnings, deldisablewarnings = xcode6.fetchlocal(cfg, 'disablewarnings')
+		local buildoptions, newbuildoptions, delbuildoptions = xcode6.fetchlocal(cfg, 'buildoptions')
+		local linkoptions, newlinkoptions, dellinkoptions = xcode6.fetchlocal(cfg, 'linkoptions')
 		local warnings = xcode6.fetchlocal(cfg, 'warnings')
-		local xcode_settings = xcode6.fetchlocal(cfg, 'xcode_settings')
+		local xcode_settings, newxcode_settings, delxcode_settings = xcode6.fetchlocal(cfg, 'xcode_settings')
+
+		local inheritldflags = true
+		local inheritcflags = true
 
 		local checkflags = { }
 		if flags then
-			if flags['C++14'] then
-				settings.CLANG_CXX_LANGUAGE_STANDARD = 'c++14'
-				settings.CLANG_CXX_LIBRARY = 'libc++'
-			elseif flags['C++11'] then
-				settings.CLANG_CXX_LANGUAGE_STANDARD = 'c++0x'
-				settings.CLANG_CXX_LIBRARY = 'libc++'
+			local noinheritflags = delflags.FloatFast or delflags.FloatStrict or delflags.NoFramePointer
+			inheritcflags = not (noinheritflags or #delbuildoptions > 0)
+			inheritldflags = not (noinheritflags or delflags.FatalLinkWarnings)
+
+			if inheritcflags then
+				buildoptions = newbuildoptions
+			end
+			if inheritldflags then
+				linkoptions = newlinkoptions
 			end
 
-			if flags.Symbols then
-				settings.GCC_ENABLE_FIX_AND_CONTINUE = booleanMap[editandcontinue]
+			local changedflags = { }
+			for _, flag in ipairs(delflags) do
+				changedflags[flag] = false
+			end
+			for _, flag in ipairs(newflags) do
+				changedflags[flag] = true
 			end
 
-			if flags.FatalWarnings then
-				settings.GCC_TREAT_WARNINGS_AS_ERRORS = true
+			if changedflags['C++14'] ~= nil or changedflags['C++11'] ~= nil then
+				if flags['C++14'] then
+					settings.CLANG_CXX_LANGUAGE_STANDARD = 'c++14'
+					settings.CLANG_CXX_LIBRARY = 'libc++'
+				elseif flags['C++11'] then
+					settings.CLANG_CXX_LANGUAGE_STANDARD = 'c++0x'
+					settings.CLANG_CXX_LIBRARY = 'libc++'
+				else
+					settings.CLANG_CXX_LANGUAGE_STANDARD = 'c++98'
+					settings.CLANG_CXX_LIBRARY = 'libstdc++'
+				end
+			end
+
+			if changedflags.Symbols ~= nil then
+				settings.GCC_ENABLE_FIX_AND_CONTINUE = changedflags.Symbols and booleanMap[editandcontinue]
+			end
+
+			if changedflags.FatalCompileWarnings ~= nil then
+				settings.GCC_TREAT_WARNINGS_AS_ERRORS = changedflags.FatalCompileWarnings
+			end
+			if newflags.FatalLinkWarnings or (not inheritldflags and flags.FatalLinkWarnings) then
+				linkoptions = table.join('-fatal_warnings', linkoptions)
 			end
 
 			-- build list of "other" C/C++ flags
-			local checks = {
-				["-ffast-math"]			 = flags.FloatFast,
-				["-ffloat-store"]		 = flags.FloatStrict,
-				["-fomit-frame-pointer"] = flags.NoFramePointer,
+			local lflags = inheritldflags and newflags or flags
+			local lchecks = {
+				["-ffast-math"]			 = lflags.FloatFast,
+				["-ffloat-store"]		 = lflags.FloatStrict,
+				["-fomit-frame-pointer"] = lflags.NoFramePointer,
+			}
+			local cflags = inheritcflags and newflags or flags
+			local cchecks = {
+				["-ffast-math"]			 = cflags.FloatFast,
+				["-ffloat-store"]		 = cflags.FloatStrict,
+				["-fomit-frame-pointer"] = cflags.NoFramePointer,
 			}
 
-			for flag, check in pairs(checks) do
+			for flag, check in pairs(lchecks) do
 				if check then
 					table.insert(checkflags, flag)
 				end
@@ -634,8 +675,12 @@
 			settings.GCC_PREFIX_HEADER = solution.getrelative(sln, path.join(prj.basedir, pchsource or pchheader))
 		end
 
-		if defines and #defines > 0 then
-			settings.GCC_PREPROCESSOR_DEFINITIONS = table.join('$(inherited)', premake.esc(defines))
+		if defines then
+			if #deldefines > 0 then
+				settings.GCC_PREPROCESSOR_DEFINITIONS = premake.esc(defines)
+			elseif #newdefines > 0 then
+				settings.GCC_PREPROCESSOR_DEFINITIONS = table.join('$(inherited)', premake.esc(newdefines))
+			end
 		end
 
 		if architecture == 'x86' then
@@ -646,19 +691,29 @@
 			settings.ARCHS = '$(ARCHS_STANDARD_32_64_BIT)'
 		end
 
-		if includedirs and #includedirs > 0 then
-			settings.HEADER_SEARCH_PATHS		 = table.join('$(inherited)', solution.getrelative(sln, includedirs))
+		if includedirs then
+			if #delincludedirs > 0 then
+				settings.HEADER_SEARCH_PATHS = solution.getrelative(sln, includedirs)
+			elseif #newincludedirs > 0 then
+				settings.HEADER_SEARCH_PATHS = table.join('$(inherited)', solution.getrelative(sln, newincludedirs))
+			end
 		end
 
 		-- get libdirs and links
 		if libdirs then
-			libdirs = solution.getrelative(sln, libdirs)
+			newlibdirs = solution.getrelative(sln, newlibdirs)
+			dellibdirs = solution.getrelative(sln, dellibdirs)
+			if #dellibdirs == 0 then
+				libdirs = newlibdirs
+			end
 			if prj then
 				libdirs = table.join(table.translate(config.getlinks(cfg, 'siblings', 'directory', nil), function(s)
 					return path.rebase(s, prj.location, sln.location)
 				end), libdirs)
 			end
-			if #libdirs > 0 then
+			if #dellibdirs > 0 then
+				settings.LIBRARY_SEARCH_PATHS = table.unique(libdirs)
+			elseif #libdirs > 0 then
 				settings.LIBRARY_SEARCH_PATHS = table.unique(table.join('$(inherited)', libdirs))
 			end
 		end
@@ -668,8 +723,12 @@
 			settings.FRAMEWORK_SEARCH_PATHS = table.join('$(inherited)', fwdirs)
 		end
 
-		if runpathdirs and #runpathdirs > 0 then
-			settings.LD_RUNPATH_SEARCH_PATHS = runpathdirs
+		if runpathdirs then
+			if #delrunpathdirs > 0 then
+				settings.LD_RUNPATH_SEARCH_PATHS = runpathdirs
+			elseif #newrunpathdirs > 0 then
+				settings.LD_RUNPATH_SEARCH_PATHS = table.join('$(inherited)', newrunpathdirs)
+			end
 		end
 
 		if prj then
@@ -685,22 +744,42 @@
 
 		settings.EXECUTABLE_PREFIX = targetprefix
 
-		local nowarn = table.translate(disablewarnings or { }, function(warning)
-			return '-Wno-' .. warning
-		end)
-		local cflags = table.join(checkflags, buildoptions, nowarn)
-		local ldflags = table.join(checkflags, linkoptions)
-		settings.OTHER_CFLAGS = #cflags > 0 and table.join('$(inherited)', cflags) or nil
-		settings.OTHER_LDFLAGS = #ldflags > 0 and table.join('$(inherited)', ldflags) or nil
-
+		local warn = nil
+		local inheritwarn = true
 		if warnings == 'Extra' then
-			settings.WARNING_CFLAGS = '-Wall'
+			warn = { '-Wall' }
 		elseif warnings == 'Off' then
 			settings.GCC_WARN_INHIBIT_ALL_WARNINGS = true
+		elseif warnings == 'Default' then
+			settings.GCC_WARN_INHIBIT_ALL_WARNINGS = false
+			inheritwarn = false
 		end
 
-		if xcode_settings then
-			settings = table.merge(settings, xcode_settings)
+		if disablewarnings then
+			disablewarnings = #deldisablewarnings > 0 and disablewarnings or newdisablewarnings
+			if #disablewarnings > 0 then
+				warn = table.translate(disablewarnings, function(warning)
+					return '-Wno-' .. warning
+				end)
+				if #deldisablewarnings == 0 and #warn > 0 then
+					warn = table.join('$(inherited)', warn)
+				end
+			end
+		end
+		local cflags = table.join(checkflags, buildoptions)
+		if inheritcflags then
+			cflags = #cflags > 0 and table.join('$(inherited)', cflags) or nil
+		end
+		local ldflags = table.join(checkflags, linkoptions)
+		if inheritldflags then
+			ldflags = #ldflags > 0 and table.join('$(inherited)', ldflags) or nil
+		end
+		settings.WARNING_CFLAGS = warn
+		settings.OTHER_CFLAGS = cflags
+		settings.OTHER_LDFLAGS = ldflags
+
+		if newxcode_settings then
+			settings = table.merge(settings, newxcode_settings)
 		end
 
 		return settings

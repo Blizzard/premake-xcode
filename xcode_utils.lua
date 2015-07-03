@@ -241,41 +241,67 @@
 
 
 	function xcode6.fetchlocal(cfg, key)
-		local prj = cfg.project
-
-		-- If it's a solution config, just fetch the value normally.
-		if not prj then
-			return cfg[key]
-		end
-
-		-- If it's a project config, then we only want values specified at the project or configuration level.
+		-- If there's no field definition, just return the raw value.
 		local field = premake.field.get(key)
 		if not field then
 			return cfg[key]
 		end
 
+		local sln = cfg.solution
+		local prj = cfg.project
+
+		-- If it's a solution config, just fetch the value normally.
+		if not prj then
+			local value = cfg[key]
+			return value, value, { }	-- everything is new
+		end
+
+		-- If it's a project config, then we only want values specified at the project or configuration level.
 		local value = nil
-		if premake.field.merges(field) then
-			value = context.fetchvalue(prj, key, true)
-			value = premake.field.merge(field, value, xcode6.fetchfiltered(cfg, field, prj))
-			value = premake.field.merge(field, value, context.fetchvalue(cfg, key, true))
+		local inserted = nil
+		local removed = nil
+		if premake.field.removes(field) then
+			value = cfg[key]
+			if value then
+				local scfg = table.filter(sln.configs, function(scfg) return scfg.name == cfg.name end)[1]
+				local parentvalue = xcode6.fetchfiltered(scfg or sln, field, cfg.terms)
+				inserted = { }
+				removed = { }
+				for _, v in ipairs(parentvalue) do
+					if not value[v] then
+						table.insert(removed, v)
+					end
+				end
+				for _, v in ipairs(value) do
+					if not parentvalue[v] then
+						table.insert(inserted, v)
+					end
+				end
+			end
+		elseif premake.field.merges(field) then
+			value = cfg[key]
+			if value then
+				inserted = context.fetchvalue(prj, key, true)
+				inserted = premake.field.merge(field, inserted, xcode6.fetchfiltered(cfg, field, cfg.terms, prj))
+				inserted = premake.field.merge(field, inserted, context.fetchvalue(cfg, key, true))
+				removed = { }
+			end
 		else
 			value = context.fetchvalue(cfg, key, true)
 			if value == nil then
-				value = xcode6.fetchfiltered(cfg, field, prj)
+				value = xcode6.fetchfiltered(cfg, field, cfg.terms, prj)
 				if value == nil then
 					value = context.fetchvalue(prj, key, true)
 				end
 			end
 		end
 
-		return value
+		return value, inserted, removed
 	end
 
 
-	function xcode6.fetchfiltered(cfg, field, origin)
-		local prj = cfg.project
-		local value = configset.fetch(cfg._cfgset, field, cfg.terms, prj._cfgset)
+	function xcode6.fetchfiltered(cfg, field, terms, ctx)
+		local value = configset.fetch(cfg._cfgset, field, terms, ctx and ctx._cfgset)
 		if value and field.tokens then
 			value = detoken.expand(value, cfg.environ, field, cfg._basedir)
 		end
