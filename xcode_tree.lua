@@ -571,8 +571,6 @@
 		local prj = cfg.project
 		local settings = { }
 
-		local dbg = prj and prj.name == 'Heroes' and cfg.name == 'DebugSlow'
-
 		local booleanMap = { On = true, Off = false }
 		local optimizeMap = { Off = 0, Debug = 1, On = 2, Speed = 3, Size = 's', Full = 'fast' }
 
