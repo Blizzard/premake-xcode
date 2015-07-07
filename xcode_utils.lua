@@ -256,15 +256,22 @@
 			return value, value, { }	-- everything is new
 		end
 
-		-- If it's a project config, then we only want values specified at the project or configuration level.
+		-- If it's a project config, then we only want values specified at the project or configuration level,
+		-- or with an explicit filter for the project or configuration. If it's a file config, then we only
+		-- want values with an explicit filter for the file.
 		local value = nil
 		local inserted = nil
 		local removed = nil
-		local scfg = table.filter(sln.configs, function(scfg) return scfg.name == cfg.name end)[1]
+		local parentcfg = cfg.buildcfg and table.filter(sln.configs, function(_cfg) return _cfg.name == cfg.name end)[1]
+		local parent = parentcfg or (cfg.terms.files and prj or sln)
 		if premake.field.removes(field) then
 			value = cfg[key]
 			if value then
-				local parentvalue = xcode6.fetchfiltered(scfg or sln, field, cfg.terms)
+				if cfg.abspath then
+					-- files don't automatically inherit settings from projects, so handle that here
+					value = premake.field.merge(field, xcode6.fetchfiltered(parent, field, cfg.terms), value)
+				end
+				local parentvalue = parent[key]
 				inserted = { }
 				removed = { }
 				for _, v in ipairs(parentvalue) do
@@ -281,7 +288,11 @@
 		elseif premake.field.merges(field) then
 			value = cfg[key]
 			if value then
-				local slnvalue = context.fetchvalue(scfg or sln, key)
+				if cfg.abspath then
+					-- files don't automatically inherit settings from projects, so handle that here
+					value = premake.field.merge(field, xcode6.fetchfiltered(parent, field, cfg.terms), value)
+				end
+				local slnvalue = context.fetchvalue(parent, key)
 				local parentvalue = xcode6.fetchfiltered(cfg, field, cfg.terms)
 				inserted = { }
 				for _, v in ipairs(parentvalue) do
@@ -302,7 +313,7 @@
 					value = context.fetchvalue(prj, key, true)
 					if value == nil then
 						local parentvalue = xcode6.fetchfiltered(cfg, field, cfg.terms)
-						local slnvalue = context.fetchvalue(scfg or sln, key)
+						local slnvalue = context.fetchvalue(parent, key)
 						if slnvalue ~= parentvalue then
 							value = parentvalue
 						end

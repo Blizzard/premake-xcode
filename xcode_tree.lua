@@ -277,8 +277,6 @@
 			node.kind = 'file'
 			node.file = file
 			if path ~= prj.icon then -- icons handled elsewhere
-				local settings = file.xcode_filesettings
-				node.settings = next(settings) and settings
 				local category = xcode6.getBuildCategory(node.name)
 				node.category = category
 				node.action = category == 'Sources' and 'build' or
@@ -377,10 +375,11 @@
 								_comment = string.format('%s in %s', nodeName, node.category),
 								_formatStyle = 'compact',
 								isa = 'PBXBuildFile',
-								fileRef = ref,
-								settings = node.settings
+								fileRef = ref
 							}
 						if node.action == 'build' then
+							local settings = xcode6.filesettings(node.file)
+							buildFile.settings = next(settings) and settings
 							table.insert(sourcesPhase.files, buildFile)
 						elseif node.action == 'copy' then
 							table.insert(copyPhase.files, buildFile)
@@ -566,6 +565,19 @@
 		return pbxnativetarget
 	end
 
+	-- TODO:
+	-- Querying a bunch of individual values from configsets like this is awful.  What we
+	-- need is a way to query all values at once and then act on what we get back.
+	-- Something like:
+	--	local settings = { }
+	--	local values = xcode6.fetchall(cfg)
+	--	for k, v in pairs(values.removed) do
+	--		removeactions[k](v, settings)
+	--	end
+	--	for k, v in pairs(values.added) do
+	--		addactions[k](v, settings)
+	--	end
+	--	return settings
 	function xcode6.buildSettings(cfg)
 		local sln = cfg.solution
 		local prj = cfg.project
@@ -575,9 +587,9 @@
 		local optimizeMap = { Off = 0, Debug = 1, On = 2, Speed = 3, Size = 's', Full = 'fast' }
 
 		local flags, newflags, delflags = xcode6.fetchlocal(cfg, 'flags')
-		local exceptionhandling = xcode6.fetchlocal(cfg, 'exceptionhandling')
-		local rtti = xcode6.fetchlocal(cfg, 'rtti')
-		local editandcontinue = xcode6.fetchlocal(cfg, 'editandcontinue')
+		local exceptionhandling = booleanMap[xcode6.fetchlocal(cfg, 'exceptionhandling')]
+		local rtti = booleanMap[xcode6.fetchlocal(cfg, 'rtti')]
+		local editandcontinue = booleanMap[xcode6.fetchlocal(cfg, 'editandcontinue')]
 		local optimize = xcode6.fetchlocal(cfg, 'optimize')
 		local pchsource = xcode6.fetchlocal(cfg, 'pchsource')
 		local pchheader = xcode6.fetchlocal(cfg, 'pchheader')
@@ -631,7 +643,7 @@
 			end
 
 			if changedflags.Symbols ~= nil then
-				settings.GCC_ENABLE_FIX_AND_CONTINUE = changedflags.Symbols and booleanMap[editandcontinue]
+				settings.GCC_ENABLE_FIX_AND_CONTINUE = changedflags.Symbols and editandcontinue
 			end
 
 			if changedflags.FatalCompileWarnings ~= nil then
@@ -662,9 +674,9 @@
 			end
 		end
 
-		settings.GCC_ENABLE_CPP_EXCEPTIONS  = booleanMap[exceptionhandling]
-		settings.GCC_ENABLE_OBJC_EXCEPTIONS = booleanMap[exceptionhandling]
-		settings.GCC_ENABLE_CPP_RTTI        = booleanMap[rtti]
+		settings.GCC_ENABLE_CPP_EXCEPTIONS  = exceptionhandling
+		settings.GCC_ENABLE_OBJC_EXCEPTIONS = exceptionhandling
+		settings.GCC_ENABLE_CPP_RTTI        = rtti
 
 		settings.GCC_OPTIMIZATION_LEVEL = optimizeMap[optimize]
 
@@ -780,5 +792,91 @@
 			settings = table.merge(settings, newxcode_settings)
 		end
 
+		return settings
+	end
+
+	function xcode6.filesettings(file)
+		local booleanMap = { On = true, Off = false }
+		local optimizeMap = { Off = 0, Debug = 1, On = 2, Speed = 3, Size = 's', Full = 'fast' }
+
+		local flags, newflags, delflags = xcode6.fetchlocal(file, 'flags')
+		local exceptionhandling = booleanMap[xcode6.fetchlocal(file, 'exceptionhandling')]
+		local rtti = booleanMap[xcode6.fetchlocal(file, 'rtti')]
+		local editandcontinue = booleanMap[xcode6.fetchlocal(file, 'editandcontinue')]	-- TODO
+		local optimize = optimizeMap[xcode6.fetchlocal(file, 'optimize')]
+		local defines, newdefines, deldefines = xcode6.fetchlocal(file, 'defines')
+		local includedirs, newincludedirs, delincludedirs = xcode6.fetchlocal(file, 'includedirs')
+		local disablewarnings, newdisablewarnings, deldisablewarnings = xcode6.fetchlocal(file, 'disablewarnings')
+		local buildoptions, newbuildoptions, delbuildoptions = xcode6.fetchlocal(file, 'buildoptions')
+		local warnings = xcode6.fetchlocal(file, 'warnings')
+		local settings = xcode6.fetchlocal(file, 'xcode_filesettings')
+
+		-- If the file is marked as excluded, don't bother processing anything else.
+		if flags.ExcludeFromBuild then
+			return { _exclude = true }
+		end
+
+		local compiler_flags = { }
+		if newflags.FatalCompileWarnings then
+			table.insert(compiler_flags, '-Werror')
+		elseif delflags.FatalCompileWarnings then
+			table.insert(compiler_flags, '-Wno-error')
+		end
+
+		if exceptionhandling ~= nil then
+			table.insert(compiler_flags, exceptionhandling and '-fexceptions' or '-fno-exceptions')
+		end
+		if rtti ~= nil then
+			table.insert(compiler_flags, rtti and '-frtti' or 'fno-rtti')
+		end
+
+		if optimize ~= nil then
+			table.insert(compiler_flags, '-O' .. tostring(optimize))
+		end
+
+		if defines then
+			for _, v in ipairs(deldefines) do
+				table.insert(compiler_flags, '-U' .. v:match('[^=]+'))
+			end
+			for _, v in ipairs(newdefines) do
+				table.insert(compiler_flags, '-D' .. v)
+			end
+		end
+
+		if includedirs then
+			-- no way to handle removed dirs
+			for _, v in ipairs(newincludedirs) do
+				table.insert(compiler_flags, '-I' .. xcode6.quoted(v))
+			end
+		end
+
+		if disablewarnings then
+			for _, v in ipairs(deldisablewarnings) do
+				table.insert(compiler_flags, '-W' .. v)
+			end
+			for _, v in ipairs(newdisablewarnings) do
+				table.insert(compiler_flags, '-Wno-' .. v)
+			end
+		end
+
+		if buildoptions then
+			-- no way to handle removed options
+			for _, v in ipairs(newbuildoptions) do
+				table.insert(compiler_flags, v)
+			end
+		end
+
+		if warnings == 'Extra' then
+			table.insert(compiler_flags, '-Wall')
+		elseif warnings == 'Off' then
+			table.insert(compiler_flags, '-w')
+		elseif warnings == 'Default' then
+			-- no way to handle this
+		end
+
+		if #compiler_flags > 0 then
+			compiler_flags = { table.concat(compiler_flags, ' '), settings.COMPILER_FLAGS }
+			settings.COMPILER_FLAGS = table.concat(compiler_flags, ' ')
+		end
 		return settings
 	end
