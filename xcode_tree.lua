@@ -644,6 +644,7 @@
 
 			if changedflags.Symbols ~= nil then
 				settings.GCC_ENABLE_FIX_AND_CONTINUE = changedflags.Symbols and editandcontinue
+				settings.LD_GENERATE_MAP_FILE = changedflags.Symbols
 			end
 
 			if changedflags.FatalCompileWarnings ~= nil then
@@ -750,6 +751,7 @@
 			settings.USE_HEADERMAP				= false
 			settings.GCC_WARN_ABOUT_RETURN_TYPE	= true
 			settings.GCC_WARN_UNUSED_VARIABLE 	= true
+			settings.LD_MAP_FILE_PATH			= '$(CONFIGURATION_BUILD_DIR)/$(PRODUCT_NAME).map'
 		end
 
 		settings.EXECUTABLE_PREFIX = targetprefix
