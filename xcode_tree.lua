@@ -584,13 +584,13 @@
 		local settings = { }
 
 		local booleanMap = { On = true, Off = false }
-		local optimizeMap = { Off = 0, Debug = 1, On = 2, Speed = 3, Size = 's', Full = 'fast' }
+		local optimizeMap = { Off = 0, Debug = 1, On = 2, Speed = 'fast', Size = 's', Full = 3 }
 
 		local flags, newflags, delflags = xcode6.fetchlocal(cfg, 'flags')
 		local exceptionhandling = booleanMap[xcode6.fetchlocal(cfg, 'exceptionhandling')]
 		local rtti = booleanMap[xcode6.fetchlocal(cfg, 'rtti')]
 		local editandcontinue = booleanMap[xcode6.fetchlocal(cfg, 'editandcontinue')]
-		local optimize = xcode6.fetchlocal(cfg, 'optimize')
+		local optimize = optimizeMap[xcode6.fetchlocal(cfg, 'optimize')]
 		local pchsource = xcode6.fetchlocal(cfg, 'pchsource')
 		local pchheader = xcode6.fetchlocal(cfg, 'pchheader')
 		local defines, newdefines, deldefines = xcode6.fetchlocal(cfg, 'defines')
@@ -679,7 +679,7 @@
 		settings.GCC_ENABLE_OBJC_EXCEPTIONS = exceptionhandling
 		settings.GCC_ENABLE_CPP_RTTI        = rtti
 
-		settings.GCC_OPTIMIZATION_LEVEL = optimizeMap[optimize]
+		settings.GCC_OPTIMIZATION_LEVEL = optimize
 
 		if pchheader and not (flags and flags.NoPCH) then
 			settings.GCC_PRECOMPILE_PREFIX_HEADER = true
@@ -799,7 +799,7 @@
 
 	function xcode6.filesettings(file)
 		local booleanMap = { On = true, Off = false }
-		local optimizeMap = { Off = 0, Debug = 1, On = 2, Speed = 3, Size = 's', Full = 'fast' }
+		local optimizeMap = { Off = 0, Debug = 1, On = 2, Speed = 'fast', Size = 's', Full = 3 }
 
 		local flags, newflags, delflags = xcode6.fetchlocal(file, 'flags')
 		local exceptionhandling = booleanMap[xcode6.fetchlocal(file, 'exceptionhandling')]
