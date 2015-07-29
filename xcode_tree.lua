@@ -186,9 +186,9 @@
 	end
 
 	function xcode6.buildProjectTree(prj, productsGroup)
-		local pbxnativetarget = prj.xcodeNode
-		if pbxnativetarget then
-			return pbxnativetarget
+		local pbxtarget = prj.xcodeNode
+		if pbxtarget then
+			return pbxtarget
 		end
 
 		local sln = prj.solution
@@ -202,42 +202,55 @@
 			name = prjName,
 			sourceTree = '<group>'
 		}
+
 		local productName = prj.targetname or prjName
-		local productPath = xcode6.getTargetName(prj, project.getfirstconfig(prj))
-		pbxnativetarget = {
-			_id = xcode6.newid(prjName, slnName, 'PBXNativeTarget'),
-			_comment = prjName,
-			_group = parentGroup,
-			_project = prj,
-			isa = 'PBXNativeTarget',
-			buildConfigurationList = {
-				_id = xcode6.newid(prjName, slnName, 'XCConfigurationList'),
-				_comment = string.format('Build configuration list for PBXNativeTarget "%s"', prjName),
-				isa = 'XCConfigurationList',
-				buildConfigurations = { },
-				defaultConfigurationIsVisible = 0,
-				defaultConfigurationName = project.getfirstconfig(prj).name
-			},
-			buildPhases = { },
-			buildRules = { },
-			dependencies = { },
-			name = prjName,
-			productName = productName,
-			productReference = {
-				_id = xcode6.newid(prjName, productName, 'PBXFileReference'),
-				_comment = path.getname(productPath),
-				_formatStyle = 'compact',
-				isa = 'PBXFileReference',
-				includeInIndex = 0,
-				path = productPath,
-				sourceTree = 'BUILT_PRODUCTS_DIR'
-			},
-			productType = xcode6.getProductType(prj)
+		if prj.kind == 'Utility' or prj.kind == 'None' then
+			pbxtarget = {
+				_id = xcode6.newid(prjName, slnName, 'PBXAggregateTarget'),
+				isa = 'PBXAggregateTarget',
+			}
+		else
+			local productPath = xcode6.getTargetName(prj, project.getfirstconfig(prj))
+			pbxtarget = {
+				_id = xcode6.newid(prjName, slnName, 'PBXNativeTarget'),
+				isa = 'PBXNativeTarget',
+				buildRules = { },
+				productReference = {
+					_id = xcode6.newid(prjName, productName, 'PBXFileReference'),
+					_comment = path.getname(productPath),
+					_formatStyle = 'compact',
+					isa = 'PBXFileReference',
+					includeInIndex = 0,
+					path = productPath,
+					sourceTree = 'BUILT_PRODUCTS_DIR'
+				},
+				productType = xcode6.getProductType(prj)
+			}
+
+			table.insertsorted(productsGroup.children, pbxtarget.productReference, function(a, b)
+				return string.lower(path.getname(a.path)) < string.lower(path.getname(b.path))
+			end)
+		end
+
+		pbxtarget._comment = prjName
+		pbxtarget._group = parentGroup
+		pbxtarget._project = prj
+		pbxtarget.buildConfigurationList = {
+			_id = xcode6.newid(prjName, slnName, 'XCConfigurationList'),
+			_comment = string.format('Build configuration list for PBXNativeTarget "%s"', prjName),
+			isa = 'XCConfigurationList',
+			buildConfigurations = { },
+			defaultConfigurationIsVisible = 0,
+			defaultConfigurationName = project.getfirstconfig(prj).name
 		}
-		prj.xcodeNode = pbxnativetarget
+		pbxtarget.buildPhases = { }
+		pbxtarget.dependencies = { }
+		pbxtarget.name = prjName
+		pbxtarget.productName = productName
+		prj.xcodeNode = pbxtarget
 
 		for cfg in project.eachconfig(prj) do
-			table.insert(pbxnativetarget.buildConfigurationList.buildConfigurations, {
+			table.insert(pbxtarget.buildConfigurationList.buildConfigurations, {
 				_id = xcode6.newid(cfg.name, slnName, prjName, 'XCBuildConfiguration'),
 				_comment = cfg.name,
 				isa = 'XCBuildConfiguration',
@@ -246,14 +259,10 @@
 			})
 		end
 
-		table.insertsorted(productsGroup.children, pbxnativetarget.productReference, function(a, b)
-			return string.lower(path.getname(a.path)) < string.lower(path.getname(b.path))
-		end)
-
 		local cmdCount = 0
 		if prj.prebuildcommands then
 			table.foreachi(prj.prebuildcommands, function(cmd)
-				table.insert(pbxnativetarget.buildPhases, {
+				table.insert(pbxtarget.buildPhases, {
 					_id = xcode6.newid(tostring(cmdCount), cmd, prjName, slnName, 'PBXShellScriptBuildPhase'),
 					_comment = 'Run Script',
 					isa = 'PBXShellScriptBuildPhase',
@@ -431,13 +440,13 @@
 		})
 
 		if #sourcesPhase.files > 0 then
-			table.insert(pbxnativetarget.buildPhases, sourcesPhase)
+			table.insert(pbxtarget.buildPhases, sourcesPhase)
 		end
 
 		table.foreachi(prj._.files, function(fcfg)
 			if fcfg.buildcommands and #fcfg.buildcommands > 0 then
 				local cmd = table.concat(fcfg.buildcommands, '\n')
-				table.insert(pbxnativetarget.buildPhases, {
+				table.insert(pbxtarget.buildPhases, {
 					_id = xcode6.newid(tostring(cmdCount), cmd, prjName, slnName, 'PBXShellScriptBuildPhase'),
 					_comment = 'Process ' .. fcfg.name,
 					isa = 'PBXShellScriptBuildPhase',
@@ -456,7 +465,7 @@
 
 		if prj.prelinkcommands then
 			table.foreachi(prj.prelinkcommands, function(cmd)
-				table.insert(pbxnativetarget.buildPhases, {
+				table.insert(pbxtarget.buildPhases, {
 					_id = xcode6.newid(cmdCount, cmd, prjName, slnName, 'PBXShellScriptBuildPhase'),
 					_comment = 'Run Script',
 					isa = 'PBXShellScriptBuildPhase',
@@ -487,13 +496,15 @@
 				local buildFileRef
 				if sibling then
 					local siblingNode = xcode6.buildProjectTree(sibling, productsGroup)
-					buildFileRef = {
-						_id = xcode6.newid(siblingNode.productReference.path, link, prjName, slnName, 'PBXBuildFile'),
-						_comment = path.getname(siblingNode.productReference.path) .. ' in Frameworks',
-						_formatStyle = 'compact',
-						isa = 'PBXBuildFile',
-						fileRef = siblingNode.productReference
-					}
+					if siblingNode.productReference then
+						buildFileRef = {
+							_id = xcode6.newid(siblingNode.productReference.path, link, prjName, slnName, 'PBXBuildFile'),
+							_comment = path.getname(siblingNode.productReference.path) .. ' in Frameworks',
+							_formatStyle = 'compact',
+							isa = 'PBXBuildFile',
+							fileRef = siblingNode.productReference
+						}
+					end
 				else
 					local isFramework = link:find('.framework$')
 					local isSystem = not path.isabsolute(link)
@@ -536,16 +547,16 @@
 				table.insert(frameworksPhase.files, buildFileRef)
 			end)
 
-			table.insert(pbxnativetarget.buildPhases, frameworksPhase)
+			table.insert(pbxtarget.buildPhases, frameworksPhase)
 		end
 
 		if #copyPhase.files > 0 then
-			table.insert(pbxnativetarget.buildPhases, copyPhase)
+			table.insert(pbxtarget.buildPhases, copyPhase)
 		end
 
 		if prj.postbuildcommands then
 			table.foreachi(prj.postbuildcommands, function(cmd)
-				table.insert(pbxnativetarget.buildPhases, {
+				table.insert(pbxtarget.buildPhases, {
 					_id = xcode6.newid(cmdCount, cmd, prjName, slnName, 'PBXShellScriptBuildPhase'),
 					_comment = 'Run Script',
 					isa = 'PBXShellScriptBuildPhase',
@@ -562,7 +573,7 @@
 			end)
 		end
 
-		return pbxnativetarget
+		return pbxtarget
 	end
 
 	-- TODO:
