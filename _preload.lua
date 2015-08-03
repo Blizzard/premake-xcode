@@ -30,3 +30,7 @@
 	}
 
 	include("xcode_api.lua")
+
+	return function(cfg)
+		return (_ACTION == "xcode")
+	end
