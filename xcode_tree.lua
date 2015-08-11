@@ -285,6 +285,7 @@
 			local node = tree.add(files, solution.getrelative(sln, path), { kind = 'group' })
 			node.kind = 'file'
 			node.file = file
+			node.exclude = file.flags and file.flags.ExcludeFromBuild
 			if path ~= prj.icon then -- icons handled elsewhere
 				local category = xcode6.getBuildCategory(node.name)
 				node.category = category
@@ -378,7 +379,7 @@
 					ref.name = nodeName ~= ref.path and nodeName or nil
 					ref._comment = nodeName
 					table.insertsorted(parentGroup.children, ref, groupsorter)
-					if node.action then
+					if node.action and not node.exclude then
 						local buildFile = {
 								_id = xcode6.newid(node.filepath, prjName, slnName, 'PBXBuildFile'),
 								_comment = string.format('%s in %s', nodeName, node.category),
@@ -420,7 +421,7 @@
 				node.xcodeNode = grp
 				parentGroup = grp
 
-				if node.action then
+				if node.action and not node.exclude then
 					local buildFile = {
 						_id = xcode6.newid(variantPath or node.filepath, prjName, slnName, 'PBXBuildFile'),
 						_comment = string.format('%s in %s', nodeName, node.category),
@@ -823,11 +824,6 @@
 		local buildoptions, newbuildoptions, delbuildoptions = xcode6.fetchlocal(file, 'buildoptions')
 		local warnings = xcode6.fetchlocal(file, 'warnings')
 		local settings = xcode6.fetchlocal(file, 'xcode_filesettings')
-
-		-- If the file is marked as excluded, don't bother processing anything else.
-		if flags.ExcludeFromBuild then
-			return { _exclude = true }
-		end
 
 		local compiler_flags = { }
 		if newflags.FatalCompileWarnings then
