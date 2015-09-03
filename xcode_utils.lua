@@ -327,10 +327,5 @@
 
 
 	function xcode6.fetchfiltered(cfg, field, terms, ctx)
-		local value = configset.fetch(cfg._cfgset, field, terms, ctx and ctx._cfgset)
-		if value and field.tokens then
-			value = detoken.expand(value, cfg.environ, field, cfg._basedir)
-		end
-
-		return value
+		return configset.fetch(cfg._cfgset, field, terms, cfg, ctx and ctx._cfgset)
 	end

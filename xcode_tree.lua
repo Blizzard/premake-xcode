@@ -769,22 +769,21 @@
 		settings.EXECUTABLE_PREFIX = targetprefix
 
 		local warn = nil
-		local inheritwarn = true
 		if warnings == 'Extra' then
 			warn = { '-Wall' }
 		elseif warnings == 'Off' then
 			settings.GCC_WARN_INHIBIT_ALL_WARNINGS = true
 		elseif warnings == 'Default' then
 			settings.GCC_WARN_INHIBIT_ALL_WARNINGS = false
-			inheritwarn = false
 		end
 
 		if disablewarnings then
 			disablewarnings = #deldisablewarnings > 0 and disablewarnings or newdisablewarnings
 			if #disablewarnings > 0 then
-				warn = table.translate(disablewarnings, function(warning)
+				warn = warn or { }
+				table.insertflat(warn, table.translate(disablewarnings, function(warning)
 					return '-Wno-' .. warning
-				end)
+				end))
 				if #deldisablewarnings == 0 and #warn > 0 then
 					warn = table.join('$(inherited)', warn)
 				end
