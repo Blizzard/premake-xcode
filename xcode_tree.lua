@@ -63,7 +63,7 @@
 				children = { },
 				sourceTree = '<group>'
 			},
-			targets = { }
+			targets = { },
 		}
 		sln.xcodeNode = pbxproject
 
@@ -255,7 +255,7 @@
 				_comment = cfg.name,
 				isa = 'XCBuildConfiguration',
 				buildSettings = xcode6.buildSettings(cfg),
-				name = cfg.name
+				name = cfg.name,
 			})
 		end
 
@@ -273,10 +273,27 @@
 					outputPaths = { },
 					runOnlyForDeploymentPostprocessing = 0,
 					shellPath = '/bin/sh',
-					shellScript = os.translateCommands(cmd)
+					shellScript = 'PATH=$BINDIRS\n' .. os.translateCommands(cmd)
 				})
 				cmdCount = cmdCount + 1
 			end)
+		end
+
+		-- add build rules.
+		for i = 1, #prj.rules do
+			local rule = premake.global.getRule(prj.rules[i])
+			local cmd = table.concat(rule.buildcommands, '\n')
+			table.insert(pbxtarget.buildRules, {
+				_id = xcode6.newid(rule.name, sln.name, 'PBXBuildRule'),
+				_comment      = 'PBXBuildRule',
+				isa           = 'PBXBuildRule',
+				compilerSpec  = 'com.apple.compilers.proxy.script',
+				filePatterns  = '*' .. rule.fileExtension,
+				fileType      = 'pattern.proxy',
+				isEditable    = 1;
+				outputFiles   = rule.buildoutputs,
+				script        = 'PATH=$BINDIRS\n' .. os.translateCommands(cmd),
+			})
 		end
 
 		files = tree.new()
@@ -354,6 +371,26 @@
 			runOnlyForDeploymentPostprocessing = 0
 		}
 
+		table.foreachi(prj._.files, function(fcfg)
+			if fcfg.buildcommands and #fcfg.buildcommands > 0 then
+				local cmd = table.concat(fcfg.buildcommands, '\n')
+				table.insert(pbxtarget.buildPhases, {
+					_id = xcode6.newid(tostring(cmdCount), cmd, prjName, slnName, 'PBXShellScriptBuildPhase'),
+					_comment = 'Process ' .. fcfg.name,
+					isa = 'PBXShellScriptBuildPhase',
+					buildActionMask = 2147483647,
+					files = { },
+					inputPaths = table.join({ solution.getrelative(sln, fcfg.abspath) },
+									solution.getrelative(sln, fcfg.buildinputs)),
+					name = 'Process ' .. fcfg.name,
+					outputPaths = solution.getrelative(sln, fcfg.buildoutputs),
+					runOnlyForDeploymentPostprocessing = 0,
+					shellPath = '/bin/sh',
+					shellScript = 'PATH=$BINDIRS\n' .. os.translateCommands(cmd)
+				})
+			end
+		end)
+
 		files.xcodeNode = parentGroup
 		tree.traverse(files, {
 			onleaf = function(node)
@@ -364,7 +401,7 @@
 					_formatStyle = 'compact',
 					isa = 'PBXFileReference',
 					path = parentPath and nodePath or node.filepath,
-					sourceTree = '<group>'
+					sourceTree = '<group>',
 				}
 				node.xcodeNode = ref
 				if node.variantGroup then
@@ -444,26 +481,6 @@
 			table.insert(pbxtarget.buildPhases, sourcesPhase)
 		end
 
-		table.foreachi(prj._.files, function(fcfg)
-			if fcfg.buildcommands and #fcfg.buildcommands > 0 then
-				local cmd = table.concat(fcfg.buildcommands, '\n')
-				table.insert(pbxtarget.buildPhases, {
-					_id = xcode6.newid(tostring(cmdCount), cmd, prjName, slnName, 'PBXShellScriptBuildPhase'),
-					_comment = 'Process ' .. fcfg.name,
-					isa = 'PBXShellScriptBuildPhase',
-					buildActionMask = 2147483647,
-					files = { },
-					inputPaths = table.join({ solution.getrelative(sln, fcfg.abspath) },
-									solution.getrelative(sln, fcfg.buildinputs)),
-					name = 'Process ' .. fcfg.name,
-					outputPaths = solution.getrelative(sln, fcfg.buildoutputs),
-					runOnlyForDeploymentPostprocessing = 0,
-					shellPath = '/bin/sh',
-					shellScript = os.translateCommands(cmd)
-				})
-			end
-		end)
-
 		if prj.prelinkcommands then
 			table.foreachi(prj.prelinkcommands, function(cmd)
 				table.insert(pbxtarget.buildPhases, {
@@ -477,7 +494,7 @@
 					outputPaths = { },
 					runOnlyForDeploymentPostprocessing = 0,
 					shellPath = '/bin/sh',
-					shellScript = os.translateCommands(cmd)
+					shellScript = 'PATH=$BINDIRS\n' .. os.translateCommands(cmd)
 				})
 				cmdCount = cmdCount + 1
 			end)
@@ -568,7 +585,7 @@
 					outputPaths = { },
 					runOnlyForDeploymentPostprocessing = 0,
 					shellPath = '/bin/sh',
-					shellScript = os.translateCommands(cmd)
+					shellScript = 'PATH=$BINDIRS\n' .. os.translateCommands(cmd)
 				})
 				cmdCount = cmdCount + 1
 			end)
@@ -609,6 +626,7 @@
 		local architecture = xcode6.fetchlocal(cfg, 'architecture')
 		local includedirs, newincludedirs, delincludedirs = xcode6.fetchlocal(cfg, 'includedirs')
 		local libdirs, newlibdirs, dellibdirs = xcode6.fetchlocal(cfg, 'libdirs')
+		local bindirs = xcode6.fetchlocal(cfg, 'bindirs')
 		local runpathdirs, newrunpathdirs, delrunpathdirs = xcode6.fetchlocal(cfg, 'xcode_runpathdirs')
 		local targetprefix = xcode6.fetchlocal(cfg, 'targetprefix')
 		local disablewarnings, newdisablewarnings, deldisablewarnings = xcode6.fetchlocal(cfg, 'disablewarnings')
@@ -800,6 +818,27 @@
 		settings.WARNING_CFLAGS = warn
 		settings.OTHER_CFLAGS = cflags
 		settings.OTHER_LDFLAGS = ldflags
+
+		if bindirs then
+			settings.BINDIRS = table.concat(solution.getrelative(sln, bindirs), ':')
+		end
+
+		-- add rule properties.
+		for i = 1, #cfg.rules do
+			local rule = premake.global.getRule(cfg.rules[i])
+
+			for prop in premake.rule.eachProperty(rule) do
+				local fld = premake.rule.getPropertyField(rule, prop)
+				local value = cfg[fld.name]
+				if value ~= nil then
+					if fld.kind == "path" then
+						settings[prop.name] = value
+					else
+						settings[prop.name] = premake.rule.getPropertyString(rule, prop, value)
+					end
+				end
+			end
+		end
 
 		if newxcode_settings then
 			settings = table.merge(settings, newxcode_settings)

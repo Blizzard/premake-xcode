@@ -61,9 +61,10 @@
 	end
 
 	function xcode6.printObject(obj, indent)
-		_p(indent, string.format('%s = %s;',
-			obj._comment and string.format('%s /* %s */', obj._id, obj._comment) or obj._id,
-			xcode6.formatObject(obj, indent, true)))
+		local a = obj._comment and string.format('%s /* %s */', obj._id, obj._comment) or obj._id
+		local b = xcode6.formatObject(obj, indent, true)
+		local c = string.format('%s = %s;', a, b)
+		premake.outln(string.rep("\t", indent) .. c)
 	end
 
 	function xcode6.formatObject(obj, indent, expand, style)

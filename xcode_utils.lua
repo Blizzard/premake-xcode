@@ -62,27 +62,36 @@
 
 
 	function xcode6.getBuildCategory(filename)
-		local categories = {
-			[".a"] = "Frameworks",
-			[".app"] = "Applications",
-			[".c"] = "Sources",
-			[".cc"] = "Sources",
-			[".cpp"] = "Sources",
-			[".cxx"] = "Sources",
-			[".dylib"] = "Frameworks",
-			[".framework"] = "Frameworks",
-			[".m"] = "Sources",
-			[".mig"] = "Sources",
-			[".mm"] = "Sources",
-			[".strings"] = "Resources",
-			[".nib"] = "Resources",
-			[".xib"] = "Resources",
-			[".icns"] = "Resources",
-			[".s"] = "Sources",
-			[".S"] = "Sources",
-			[".txt"] = "Resources"
-		}
-		return categories[path.getextension(filename)]
+		if not premake.xcode6._buildCategories then
+			local categories = {
+				[".a"] = "Frameworks",
+				[".app"] = "Applications",
+				[".c"] = "Sources",
+				[".cc"] = "Sources",
+				[".cpp"] = "Sources",
+				[".cxx"] = "Sources",
+				[".dylib"] = "Frameworks",
+				[".framework"] = "Frameworks",
+				[".m"] = "Sources",
+				[".mig"] = "Sources",
+				[".mm"] = "Sources",
+				[".strings"] = "Resources",
+				[".nib"] = "Resources",
+				[".xib"] = "Resources",
+				[".icns"] = "Resources",
+				[".s"] = "Sources",
+				[".S"] = "Sources",
+				[".txt"] = "Resources"
+			}
+
+			for rule in premake.global.eachRule() do
+				categories[rule.fileExtension] = "Sources"
+			end
+
+			premake.xcode6._buildCategories = categories
+		end
+
+		return premake.xcode6._buildCategories[path.getextension(filename)]
 	end
 
 
@@ -329,3 +338,4 @@
 	function xcode6.fetchfiltered(cfg, field, terms, ctx)
 		return configset.fetch(cfg._cfgset, field, terms, cfg, ctx and ctx._cfgset)
 	end
+
