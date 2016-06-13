@@ -273,7 +273,7 @@
 					outputPaths = { },
 					runOnlyForDeploymentPostprocessing = 0,
 					shellPath = '/bin/sh',
-					shellScript = 'PATH=$BINDIRS\n' .. os.translateCommands(cmd)
+					shellScript = xcode6.setScriptPath() .. os.translateCommands(cmd)
 				})
 				cmdCount = cmdCount + 1
 			end)
@@ -292,7 +292,7 @@
 				fileType      = 'pattern.proxy',
 				isEditable    = 1;
 				outputFiles   = rule.buildoutputs,
-				script        = 'PATH=$BINDIRS\n' .. os.translateCommands(cmd),
+				script        = xcode6.setScriptPath() .. os.translateCommands(cmd),
 			})
 		end
 
@@ -386,7 +386,7 @@
 					outputPaths = solution.getrelative(sln, fcfg.buildoutputs),
 					runOnlyForDeploymentPostprocessing = 0,
 					shellPath = '/bin/sh',
-					shellScript = 'PATH=$BINDIRS\n' .. os.translateCommands(cmd)
+					shellScript = xcode6.setScriptPath() .. os.translateCommands(cmd)
 				})
 			end
 		end)
@@ -494,7 +494,7 @@
 					outputPaths = { },
 					runOnlyForDeploymentPostprocessing = 0,
 					shellPath = '/bin/sh',
-					shellScript = 'PATH=$BINDIRS\n' .. os.translateCommands(cmd)
+					shellScript = xcode6.setScriptPath() .. os.translateCommands(cmd)
 				})
 				cmdCount = cmdCount + 1
 			end)
@@ -585,7 +585,7 @@
 					outputPaths = { },
 					runOnlyForDeploymentPostprocessing = 0,
 					shellPath = '/bin/sh',
-					shellScript = 'PATH=$BINDIRS\n' .. os.translateCommands(cmd)
+					shellScript = xcode6.setScriptPath() .. os.translateCommands(cmd)
 				})
 				cmdCount = cmdCount + 1
 			end)
@@ -820,7 +820,7 @@
 		settings.OTHER_LDFLAGS = ldflags
 
 		if bindirs then
-			settings.BINDIRS = table.concat(solution.getrelative(sln, bindirs), ':')
+			settings.EXECUTABLE_PATHS = table.concat(solution.getrelative(sln, bindirs), ':')
 		end
 
 		-- add rule properties.

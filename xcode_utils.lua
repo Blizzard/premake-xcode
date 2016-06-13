@@ -339,3 +339,7 @@
 		return configset.fetch(cfg._cfgset, field, terms, cfg, ctx and ctx._cfgset)
 	end
 
+
+	function xcode6.setScriptPath()
+		return 'PATH=$EXECUTABLE_PATHS:$PATH\n'
+	end
