@@ -21,6 +21,11 @@
 			premake.escaper(premake.xcode6.esc)
 			premake.generate(sln, ".xcodeproj/project.pbxproj", premake.xcode6.solution)
 		end,
+
+		pathVars = {
+			["file.basename"] = { absolute = false, token = "$(INPUT_FILE_BASE)" },
+			["file.abspath"]  = { absolute = true,  token = "$(INPUT_FILE_PATH)" },
+		}
 	}
 
 	newoption
