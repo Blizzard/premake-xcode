@@ -633,6 +633,7 @@
 		local buildoptions, newbuildoptions, delbuildoptions = xcode6.fetchlocal(cfg, 'buildoptions')
 		local linkoptions, newlinkoptions, dellinkoptions = xcode6.fetchlocal(cfg, 'linkoptions')
 		local warnings = xcode6.fetchlocal(cfg, 'warnings')
+		local symbols = xcode6.fetchlocal(cfg, 'symbols')
 		local xcode_settings, newxcode_settings, delxcode_settings = xcode6.fetchlocal(cfg, 'xcode_settings')
 
 		local inheritldflags = true
@@ -672,11 +673,6 @@
 				end
 			end
 
-			if changedflags.Symbols ~= nil then
-				settings.GCC_ENABLE_FIX_AND_CONTINUE = changedflags.Symbols and editandcontinue
-				settings.LD_GENERATE_MAP_FILE = changedflags.Symbols
-			end
-
 			if changedflags.FatalCompileWarnings ~= nil then
 				settings.GCC_TREAT_WARNINGS_AS_ERRORS = changedflags.FatalCompileWarnings
 			end
@@ -703,6 +699,11 @@
 					table.insert(checkflags, flag)
 				end
 			end
+		end
+
+		if symbols then
+			settings.GCC_ENABLE_FIX_AND_CONTINUE = symbols and editandcontinue
+			settings.LD_GENERATE_MAP_FILE = symbols
 		end
 
 		settings.GCC_ENABLE_CPP_EXCEPTIONS  = exceptionhandling
