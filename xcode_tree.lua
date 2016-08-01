@@ -282,7 +282,14 @@
 		-- add build rules.
 		for i = 1, #prj.rules do
 			local rule = premake.global.getRule(prj.rules[i])
-			local cmd = table.concat(rule.buildcommands, '\n')
+
+			-- create shadow contexts.
+			local outputsContext = xcode6.buildOutputsEnvironment(rule)
+			local cmdContext = xcode6.buildCommandsEnvironment(rule)
+
+			-- create table entry.
+			local cmd = table.concat(cmdContext.buildcommands, '\n')
+
 			table.insert(pbxtarget.buildRules, {
 				_id = xcode6.newid(rule.name, sln.name, 'PBXBuildRule'),
 				_comment      = 'PBXBuildRule',
@@ -291,7 +298,7 @@
 				filePatterns  = '*' .. rule.fileExtension,
 				fileType      = 'pattern.proxy',
 				isEditable    = 1;
-				outputFiles   = rule.buildoutputs,
+				outputFiles   = outputsContext.buildoutputs,
 				script        = xcode6.setScriptPath() .. os.translateCommands(cmd),
 			})
 		end

@@ -343,3 +343,25 @@
 	function xcode6.setScriptPath()
 		return 'PATH=$EXECUTABLE_PATHS:$PATH\n'
 	end
+
+
+	function xcode6.buildOutputsEnvironment(rule)
+		local pathVars = premake.rule.createPathVars(rule, "$(%s)")
+		pathVars["file.basename"] = { absolute = false, token = "$(INPUT_FILE_BASE)" }
+		pathVars["file.abspath"]  = { absolute = true,  token = "$(INPUT_FILE_PATH)" }
+		pathVars["file.relpath"]  = { absolute = true,  token = "$(INPUT_FILE_PATH)" }
+
+		return context.extent(rule, { pathVars = pathVars })
+	end
+
+	function xcode6.buildCommandsEnvironment(rule)
+		local pathVars = {}
+		pathVars["file.basename"] = { absolute = false, token = "$INPUT_FILE_BASE" }
+		pathVars["file.abspath"]  = { absolute = true,  token = "$INPUT_FILE_PATH" }
+		pathVars["file.relpath"]  = { absolute = true,  token = "$INPUT_FILE_PATH" }
+
+		local environ = premake.rule.createEnvironment(rule, "$%s")
+		environ.pathVars = pathVars
+
+		return context.extent(rule, environ)
+	end

@@ -25,6 +25,7 @@
 		pathVars = {
 			["file.basename"] = { absolute = false, token = "$(INPUT_FILE_BASE)" },
 			["file.abspath"]  = { absolute = true,  token = "$(INPUT_FILE_PATH)" },
+			["file.relpath"]  = { absolute = true,  token = "$(INPUT_FILE_PATH)" },
 		}
 	}
 
