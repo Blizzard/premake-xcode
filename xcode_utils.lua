@@ -85,7 +85,9 @@
 			}
 
 			for rule in premake.global.eachRule() do
-				categories[rule.fileExtension] = "Sources"
+				for _, v in ipairs(rule.fileextension) do
+					categories[v] = "Sources"
+				end
 			end
 
 			premake.xcode6._buildCategories = categories

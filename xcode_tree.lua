@@ -295,7 +295,7 @@
 				_comment      = 'PBXBuildRule',
 				isa           = 'PBXBuildRule',
 				compilerSpec  = 'com.apple.compilers.proxy.script',
-				filePatterns  = '*' .. rule.fileExtension,
+				filePatterns  = '*' .. table.concat(rule.fileextension, ';*')
 				fileType      = 'pattern.proxy',
 				isEditable    = 1;
 				outputFiles   = outputsContext.buildoutputs,
