@@ -840,9 +840,9 @@
 				local value = cfg[fld.name]
 				if value ~= nil then
 					if fld.kind == "path" then
-						value = solution.getrelative(sln, value)
+						value = xcode6.path(sln, '$(SRCROOT)', value)
 					elseif fld.kind == "list:path" then
-						value = solution.getrelative(sln, value)
+						value = xcode6.path(sln, '$(SRCROOT)', value)
 					end
 
 					settings[prop.name] = premake.rule.expandString(rule, prop, value)

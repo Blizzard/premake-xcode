@@ -369,3 +369,20 @@
 
 		return context.extent(rule, environ)
 	end
+
+
+	function xcode6.path(sln, prefix, filename)
+		if type(filename) == "table" then
+			local result = {}
+			for i, name in ipairs(filename) do
+				if name and #name > 0 then
+					table.insert(result, xcode6.path(sln, prefix, name))
+				end
+			end
+			return result
+		else
+			if filename then
+				return path.join(prefix, path.getrelative(sln.location, filename))
+			end
+		end
+	end
