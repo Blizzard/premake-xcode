@@ -839,11 +839,7 @@
 				local fld = premake.rule.getPropertyField(rule, prop)
 				local value = cfg[fld.name]
 				if value ~= nil then
-					if fld.kind == "path" then
-						settings[prop.name] = value
-					else
-						settings[prop.name] = premake.rule.getPropertyString(rule, prop, value)
-					end
+					settings[prop.name] = premake.rule.expandString(rule, prop, value)
 				end
 			end
 		end
