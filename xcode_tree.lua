@@ -839,6 +839,12 @@
 				local fld = premake.rule.getPropertyField(rule, prop)
 				local value = cfg[fld.name]
 				if value ~= nil then
+					if fld.kind == "path" then
+						value = solution.getrelative(sln, value)
+					elseif fld.kind == "list:path" then
+						value = solution.getrelative(sln, value)
+					end
+
 					settings[prop.name] = premake.rule.expandString(rule, prop, value)
 				end
 			end
