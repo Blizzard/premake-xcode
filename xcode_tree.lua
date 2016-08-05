@@ -640,7 +640,7 @@
 		local buildoptions, newbuildoptions, delbuildoptions = xcode6.fetchlocal(cfg, 'buildoptions')
 		local linkoptions, newlinkoptions, dellinkoptions = xcode6.fetchlocal(cfg, 'linkoptions')
 		local warnings = xcode6.fetchlocal(cfg, 'warnings')
-		local symbols = xcode6.fetchlocal(cfg, 'symbols')
+		local symbols = booleanMap[xcode6.fetchlocal(cfg, 'symbols')]
 		local xcode_settings, newxcode_settings, delxcode_settings = xcode6.fetchlocal(cfg, 'xcode_settings')
 
 		local inheritldflags = true
