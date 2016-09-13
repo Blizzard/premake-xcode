@@ -121,7 +121,7 @@
 		local groups = { }
 		for prj in solution.eachproject(sln) do
 			local parentName = prj.group
-			local parent = iif(parentName or string.len(parentName), groups[parentName], targetsGroup)
+			local parent = iif(parentName or #parentName, groups[parentName], targetsGroup)
 			if not parent then
 				parent = {
 					_id = xcode6.newid(parentName, 'PBXGroup'),
