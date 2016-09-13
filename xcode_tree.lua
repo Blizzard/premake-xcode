@@ -121,7 +121,7 @@
 		local groups = { }
 		for prj in solution.eachproject(sln) do
 			local parentName = prj.group
-			local parent = iif(parentName, groups[parentName], targetsGroup)
+			local parent = iif(parentName or #parentName, groups[parentName], targetsGroup)
 			if not parent then
 				parent = {
 					_id = xcode6.newid(parentName, 'PBXGroup'),
@@ -306,7 +306,9 @@
 		files = tree.new()
 		table.foreachi(prj._.files, function(file)
 			local path = file.abspath
-			local node = tree.add(files, solution.getrelative(sln, path), { kind = 'group' })
+			local vpath = bnet.getvpath(prj, path)
+			local node = tree.add(files, solution.getrelative(sln, vpath), { kind = 'group', isvpath = vpath ~= path })
+			node.relativepath = solution.getrelative(sln, path)
 			node.kind = 'file'
 			node.file = file
 			node.exclude = file.flags and file.flags.ExcludeFromBuild
@@ -410,6 +412,11 @@
 					path = parentPath and nodePath or node.filepath,
 					sourceTree = '<group>',
 				}
+
+				if node.isvpath then
+					ref.path = node.relativepath
+				end
+
 				node.xcodeNode = ref
 				if node.variantGroup then
 					ref.name = node.loc
@@ -457,9 +464,14 @@
 					_comment = nodeName,
 					isa = 'PBXGroup',
 					children = { },
-					path = parentPath and nodePath or node.filepath,
+					path =  node.filepath,
 					sourceTree = '<group>'
 				}
+
+				if node.isvpath then
+					grp.path = nil
+				end
+
 				grp.name = nodeName ~= grp.path and nodeName or nil
 				table.insertsorted(parentGroup.children, grp, groupsorter)
 				node.xcodeNode = grp
