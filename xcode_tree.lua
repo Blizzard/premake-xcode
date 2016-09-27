@@ -383,14 +383,14 @@
 		table.foreachi(prj._.files, function(fcfg)
 			if fcfg.buildcommands and #fcfg.buildcommands > 0 then
 				local cmd = table.concat(fcfg.buildcommands, '\n')
+				local inputPath = solution.getrelative(sln, fcfg.abspath)
 				table.insert(pbxtarget.buildPhases, {
-					_id = xcode6.newid(tostring(cmdCount), cmd, prjName, slnName, 'PBXShellScriptBuildPhase'),
+					_id = xcode6.newid(cmd, inputPath, prjName, slnName, 'PBXShellScriptBuildPhase'),
 					_comment = 'Process ' .. fcfg.name,
 					isa = 'PBXShellScriptBuildPhase',
 					buildActionMask = 2147483647,
 					files = { },
-					inputPaths = table.join({ solution.getrelative(sln, fcfg.abspath) },
-									solution.getrelative(sln, fcfg.buildinputs)),
+					inputPaths = table.join({ inputPath }, solution.getrelative(sln, fcfg.buildinputs)),
 					name = 'Process ' .. fcfg.name,
 					outputPaths = solution.getrelative(sln, fcfg.buildoutputs),
 					runOnlyForDeploymentPostprocessing = 0,
