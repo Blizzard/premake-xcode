@@ -9,7 +9,8 @@
 		trigger         = "xcode",
 		shortname       = "Xcode",
 		description     = "Generate Apple Xcode 6 project",
-		os              = "macosx",
+		targetos        = "macosx",
+		toolset         = "clang",
 
 		valid_kinds     = { "ConsoleApp", "WindowedApp", "SharedLib", "StaticLib", "Makefile", "Utility", "None" },
 		valid_languages = { "C", "C++" },
@@ -23,9 +24,12 @@
 		end,
 
 		pathVars = {
-			["file.basename"] = { absolute = false, token = "$(INPUT_FILE_BASE)" },
-			["file.abspath"]  = { absolute = true,  token = "$(INPUT_FILE_PATH)" },
-			["file.relpath"]  = { absolute = true,  token = "$(INPUT_FILE_PATH)" },
+			["file.basename"]     = { absolute = false, token = "$(INPUT_FILE_BASE)" },
+			["file.abspath"]      = { absolute = true,  token = "$(INPUT_FILE_PATH)" },
+			["file.relpath"]      = { absolute = true,  token = "$(INPUT_FILE_PATH)" },
+			["file.path"]         = { absolute = true,  token = "$(INPUT_FILE_PATH)" },
+			["file.directory"]    = { absolute = true,  token = "$(INPUT_FILE_DIR)" },
+			["file.reldirectory"] = { absolute = true,  token = "$(INPUT_FILE_DIR)" },
 		}
 	}
 

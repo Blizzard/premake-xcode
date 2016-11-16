@@ -349,20 +349,24 @@
 
 	function xcode6.buildOutputsEnvironment(rule)
 		local pathVars = premake.rule.createPathVars(rule, "$(%s)")
-		pathVars["file.basename"] = { absolute = false, token = "$(INPUT_FILE_BASE)" }
-		pathVars["file.abspath"]  = { absolute = true,  token = "$(INPUT_FILE_PATH)" }
-		pathVars["file.relpath"]  = { absolute = true,  token = "$(INPUT_FILE_PATH)" }
-		pathVars["file.path"]     = { absolute = true,  token = "$(INPUT_FILE_DIR)" }
+		pathVars["file.basename"]     = { absolute = false, token = "$(INPUT_FILE_BASE)" }
+		pathVars["file.abspath"]      = { absolute = true,  token = "$(INPUT_FILE_PATH)" }
+		pathVars["file.relpath"]      = { absolute = true,  token = "$(INPUT_FILE_PATH)" }
+		pathVars["file.path"]         = { absolute = true,  token = "$(INPUT_FILE_PATH)" }
+		pathVars["file.directory"]    = { absolute = true,  token = "$(INPUT_FILE_DIR)" }
+		pathVars["file.reldirectory"] = { absolute = true,  token = "$(INPUT_FILE_DIR)" }
 
 		return context.extent(rule, { pathVars = pathVars })
 	end
 
 	function xcode6.buildCommandsEnvironment(rule)
 		local pathVars = {}
-		pathVars["file.basename"] = { absolute = false, token = "$INPUT_FILE_BASE" }
-		pathVars["file.abspath"]  = { absolute = true,  token = "$INPUT_FILE_PATH" }
-		pathVars["file.relpath"]  = { absolute = true,  token = "$INPUT_FILE_PATH" }
-		pathVars["file.path"]     = { absolute = true,  token = "$INPUT_FILE_DIR" }
+		pathVars["file.basename"]     = { absolute = false, token = "$INPUT_FILE_BASE" }
+		pathVars["file.abspath"]      = { absolute = true,  token = "$INPUT_FILE_PATH" }
+		pathVars["file.relpath"]      = { absolute = true,  token = "$INPUT_FILE_PATH" }
+		pathVars["file.path"]         = { absolute = true,  token = "$INPUT_FILE_PATH" }
+		pathVars["file.directory"]    = { absolute = true,  token = "$INPUT_FILE_DIR" }
+		pathVars["file.reldirectory"] = { absolute = true,  token = "$INPUT_FILE_DIR" }
 
 		local environ = premake.rule.createEnvironment(rule, "$%s")
 		environ.pathVars = pathVars

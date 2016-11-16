@@ -12,6 +12,14 @@
 	local solution = premake.solution
 	local tree     = premake.tree
 
+	local function removeUniqueTag(s)
+		local i = string.find(s, "#")
+		if i == nil then
+			return s
+		else
+			return string.sub(s, 0, i-1)
+		end
+	end
 
 	local function groupsorter(a, b)
 		if a.isa ~= b.isa then
@@ -121,7 +129,7 @@
 		local groups = { }
 		for prj in solution.eachproject(sln) do
 			local parentName = prj.group
-			local parent = iif(parentName or #parentName, groups[parentName], targetsGroup)
+			local parent = iif(parentName and #parentName ~= 0, groups[parentName], targetsGroup)
 			if not parent then
 				parent = {
 					_id = xcode6.newid(parentName, 'PBXGroup'),
@@ -307,29 +315,48 @@
 		table.foreachi(prj._.files, function(file)
 			local path = file.abspath
 			local vpath = bnet.getvpath(prj, path)
-			local node = tree.add(files, solution.getrelative(sln, vpath), { kind = 'group', isvpath = vpath ~= path })
+			local isvpath = vpath ~= path
+			local uniquifier = ""
+			if isvpath then
+				uniquifier = "#" .. path:sha1()
+			end
+			local node = tree.add(files, solution.getrelative(sln, vpath .. uniquifier), { kind = 'group', isvpath = isvpath })
 			node.relativepath = solution.getrelative(sln, path)
 			node.kind = 'file'
 			node.file = file
 			node.exclude = file.flags and file.flags.ExcludeFromBuild
 			if path ~= prj.icon then -- icons handled elsewhere
-				local category = xcode6.getBuildCategory(node.name)
+				local category = xcode6.getBuildCategory(isvpath and removeUniqueTag(node.name) or node.name)
 				node.category = category
 				node.action = category == 'Sources' and 'build' or
 					category == 'Resources' and 'copy' or nil
 			end
 		end)
 		table.foreachi(prj.xcode_resources, function(file)
+			local vpath = bnet.getvpath(prj, file)
+			local isvpath = vpath ~= file
 			file = solution.getrelative(sln, file)
+			local funiquifier = ""
+			if isvpath then
+				uniquifier = "#" .. file:sha1()
+			end
 			local lproj = file:match('^.*%.lproj%f[/]')
 			if lproj then
-				local parentPath = path.getdirectory(lproj)
+				local parentPath = path.getdirectory(isvpath and vpath or lproj)
 				local resPath = path.getrelative(lproj, file)
 				local filePath = path.join(path.getname(lproj), resPath)
-				local parentNode = tree.add(files, parentPath, { kind = 'group' })
-				local variantGroup = parentNode.children[resPath]
+				local parentNode = tree.add(files, parentPath, { kind = 'group', isvpath = isvpath })
+  				local fspath = path.join(parentPath, resPath)
+  				local uniquifier = ""
+  				if isvpath then
+  					uniquifier = "#" .. fspath:sha1()
+  				end
+  				local uniquerespath = resPath .. uniquifier
+				local variantGroup = parentNode.children[uniquerespath]
 				if not variantGroup then
-					variantGroup = tree.new(resPath)
+					variantGroup = tree.new(uniquerespath)
+					variantGroup.isvpath = isvpath
+					variantGroup.relativepath = path.getdirectory(lproj)
 					variantGroup.path = path.join(parentNode.path, variantGroup.name)
 					variantGroup.kind = 'variantGroup'
 					variantGroup.action = 'copy'
@@ -342,7 +369,7 @@
 				node.loc = path.getbasename(lproj)
 				tree.insert(variantGroup, node)
 			else
-				local node = tree.add(files, file, { kind = 'group' })
+				local node = tree.add(files, isvpath and (vpath .. uniquifier) or file, { kind = 'group', isvpath = isvpath })
 				node.kind = 'file'
 				node.action = 'copy'
 				node.category = 'Resources'
@@ -350,12 +377,12 @@
 		end)
 		tree.traverse(files, {
 			onnode = function(node)
-				local parentPath = node.parent.filepath
+				local parentPath = node.parent.vpath
 				if node.kind == 'variantGroup' then
-					node.filepath = parentPath
+					node.vpath = parentPath
 				else
 					local localPath = tree.getlocalpath(node)
-					node.filepath = parentPath and
+					node.vpath = parentPath and
 						path.join(parentPath, localPath) or
 						localPath
 				end
@@ -403,18 +430,17 @@
 		files.xcodeNode = parentGroup
 		tree.traverse(files, {
 			onleaf = function(node)
-				local parentPath = node.parent.filepath
 				local nodePath = tree.getlocalpath(node)
 				local ref = {
-					_id = xcode6.newid(node.filepath, prjName, slnName, 'PBXFileReference'),
+					_id = xcode6.newid(node.vpath, prjName, slnName, 'PBXFileReference'),
 					_formatStyle = 'compact',
 					isa = 'PBXFileReference',
-					path = parentPath and nodePath or node.filepath,
+					path = node.parent.vpath and nodePath or node.vpath,
 					sourceTree = '<group>',
 				}
 
 				if node.isvpath then
-					ref.path = node.relativepath
+					ref.path = removeUniqueTag(node.relativepath)
 				end
 
 				node.xcodeNode = ref
@@ -427,12 +453,19 @@
 						end)
 				else
 					local nodeName = path.getname(nodePath)
+					if node.isvpath then
+						nodeName = removeUniqueTag(nodeName)
+					end
 					ref.name = nodeName ~= ref.path and nodeName or nil
 					ref._comment = nodeName
+					local fileType = xcode6.fetchlocal(node.file, "xcode_filetype")
+					if (fileType) then
+						ref.explicitFileType = fileType
+					end
 					table.insertsorted(parentGroup.children, ref, groupsorter)
 					if node.action and not node.exclude then
 						local buildFile = {
-								_id = xcode6.newid(node.filepath, prjName, slnName, 'PBXBuildFile'),
+								_id = xcode6.newid(node.vpath, prjName, slnName, 'PBXBuildFile'),
 								_comment = string.format('%s in %s', nodeName, node.category),
 								_formatStyle = 'compact',
 								isa = 'PBXBuildFile',
@@ -449,28 +482,34 @@
 				end
 			end,
 			onbranchenter = function(node)
-				local parentPath = node.parent.filepath
 				local nodePath = tree.getlocalpath(node)
 				local nodeName = path.getname(nodePath)
-				local variantPath = node.kind == 'variantGroup' and path.join(node.filepath, nodeName) or nil
+				if node.isvpath then
+					nodeName = removeUniqueTag(nodeName)
+				end
+				local variantPath = node.kind == 'variantGroup' and path.join(node.vpath, nodeName) or nil
 				local grp = variantPath and {
-					_id = xcode6.newid(path.join(node.filepath, nodeName), prjName, slnName, 'PBXVariantGroup'),
+					_id = xcode6.newid(path.join(node.vpath, nodeName), prjName, slnName, 'PBXVariantGroup'),
 					_comment = nodeName,
 					isa = 'PBXVariantGroup',
 					children = { },
 					sourceTree = '<group>'
 				} or {
-					_id = xcode6.newid(node.filepath, prjName, slnName, 'PBXGroup'),
+					_id = xcode6.newid(node.vpath, prjName, slnName, 'PBXGroup'),
 					_comment = nodeName,
 					isa = 'PBXGroup',
 					children = { },
-					path =  node.filepath,
+					path = node.parent.vpath and nodePath or node.vpath,
 					sourceTree = '<group>'
 				}
 
 				if node.isvpath then
 					grp.path = nil
+					if node.kind ~= 'group' then
+						grp.path = removeUniqueTag(node.relativepath)
+					end
 				end
+
 
 				grp.name = nodeName ~= grp.path and nodeName or nil
 				table.insertsorted(parentGroup.children, grp, groupsorter)
@@ -479,7 +518,7 @@
 
 				if node.action and not node.exclude then
 					local buildFile = {
-						_id = xcode6.newid(variantPath or node.filepath, prjName, slnName, 'PBXBuildFile'),
+						_id = xcode6.newid(variantPath or node.vpath, prjName, slnName, 'PBXBuildFile'),
 						_comment = string.format('%s in %s', nodeName, node.category),
 						_formatStyle = 'compact',
 						isa = 'PBXBuildFile',

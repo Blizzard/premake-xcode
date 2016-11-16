@@ -27,6 +27,13 @@
 
 
 	api.register {
+		name = "xcode_filetype",
+		scope = "project",
+		kind = "string",
+		tokens = true
+	}
+
+	api.register {
 		name = "xcode_resources",
 		scope = "project",
 		kind = "list:file",
