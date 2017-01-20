@@ -252,6 +252,11 @@
 
 
 	function xcode6.fetchlocal(cfg, key)
+		-- if cfg is nil just exit.
+		if cfg == nil then
+			return nil
+		end
+
 		-- If there's no field definition, just return the raw value.
 		local field = premake.field.get(key)
 		if not field then
