@@ -312,6 +312,7 @@
 		end
 
 		files = tree.new()
+		vfiles = tree.new()
 		table.foreachi(prj._.files, function(file)
 			local path = file.abspath
 			local vpath = bnet.getvpath(prj, path)
@@ -320,7 +321,7 @@
 			if isvpath then
 				uniquifier = "#" .. path:sha1()
 			end
-			local node = tree.add(files, solution.getrelative(sln, vpath .. uniquifier), { kind = 'group', isvpath = isvpath })
+			local node = tree.add(isvpath and vfiles or files, solution.getrelative(sln, vpath .. uniquifier), { kind = 'group', isvpath = isvpath })
 			node.relativepath = solution.getrelative(sln, path)
 			node.kind = 'file'
 			node.file = file
@@ -345,7 +346,7 @@
 				local parentPath = path.getdirectory(isvpath and vpath or lproj)
 				local resPath = path.getrelative(lproj, file)
 				local filePath = path.join(path.getname(lproj), resPath)
-				local parentNode = tree.add(files, parentPath, { kind = 'group', isvpath = isvpath })
+				local parentNode = tree.add(isvpath and vfiles or files, parentPath, { kind = 'group', isvpath = isvpath })
   				local fspath = path.join(parentPath, resPath)
   				local uniquifier = ""
   				if isvpath then
@@ -369,26 +370,30 @@
 				node.loc = path.getbasename(lproj)
 				tree.insert(variantGroup, node)
 			else
-				local node = tree.add(files, isvpath and (vpath .. uniquifier) or file, { kind = 'group', isvpath = isvpath })
+				local node = tree.add(isvpath and vfiles or files, solution.getrelative(sln, vpath .. uniquifier), { kind = 'group', isvpath = isvpath })
+				node.relativepath = file
 				node.kind = 'file'
 				node.action = 'copy'
 				node.category = 'Resources'
 			end
 		end)
-		tree.traverse(files, {
-			onnode = function(node)
-				local parentPath = node.parent.vpath
-				if node.kind == 'variantGroup' then
-					node.vpath = parentPath
-				else
-					local localPath = tree.getlocalpath(node)
-					node.vpath = parentPath and
-						path.join(parentPath, localPath) or
-						localPath
-				end
+		local setvpaths = function(node)
+			local parentPath = node.parent.vpath
+			if node.kind == 'variantGroup' then
+				node.vpath = parentPath
+			else
+				local localPath = tree.getlocalpath(node)
+				node.vpath = parentPath and
+					path.join(parentPath, localPath) or
+					localPath
 			end
-		})
+		end
+		tree.traverse(files, { onnode = setvpaths })
+		tree.traverse(vfiles, { onnode = setvpaths })
 		tree.trimroot(files)
+		for i, v in ipairs(vfiles.children) do
+			tree.insert(files, v)
+		end
 
 		local sourcesPhase = {
 			_id = xcode6.newid('Sources', prjName, slnName, 'PBXSourcesBuildPhase'),
