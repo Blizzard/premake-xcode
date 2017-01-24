@@ -871,11 +871,25 @@
 				end
 			end
 		end
+
+		local ldflags = table.join(checkflags, linkoptions)
+		if cfg ~= prj and cfg ~= sln then 
+			local newlinks = table.arraycopy(cfg.links)
+			local parent = prj or sln
+			for _,link in ipairs(parent.links) do
+				table.remove(newlinks, table.indexof(newlinks,link))
+			end
+			for _,link in ipairs(newlinks) do
+				if not sln.projects[link] then 
+					table.insert(ldflags, link)
+				end 
+			end
+		end
+
 		local cflags = table.join(checkflags, buildoptions)
 		if inheritcflags then
 			cflags = #cflags > 0 and table.join('$(inherited)', cflags) or nil
 		end
-		local ldflags = table.join(checkflags, linkoptions)
 		if inheritldflags then
 			ldflags = #ldflags > 0 and table.join('$(inherited)', ldflags) or nil
 		end
