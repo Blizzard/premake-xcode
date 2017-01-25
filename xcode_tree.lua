@@ -337,7 +337,7 @@
 			local vpath = bnet.getvpath(prj, file)
 			local isvpath = vpath ~= file
 			file = solution.getrelative(sln, file)
-			local funiquifier = ""
+			local uniquifier = ""
 			if isvpath then
 				uniquifier = "#" .. file:sha1()
 			end
@@ -873,16 +873,16 @@
 		end
 
 		local ldflags = table.join(checkflags, linkoptions)
-		if cfg ~= prj and cfg ~= sln then 
+		if cfg ~= prj and cfg ~= sln then
 			local newlinks = table.arraycopy(cfg.links)
 			local parent = prj or sln
 			for _,link in ipairs(parent.links) do
-				table.remove(newlinks, table.indexof(newlinks,link))
+				table.remove(newlinks, table.indexof(newlinks, link))
 			end
 			for _,link in ipairs(newlinks) do
-				if not sln.projects[link] then 
+				if not sln.projects[link] then
 					table.insert(ldflags, link)
-				end 
+				end
 			end
 		end
 
