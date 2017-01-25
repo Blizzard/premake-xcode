@@ -881,7 +881,7 @@
 			end
 			for _,link in ipairs(newlinks) do
 				if not sln.projects[link] then
-					table.insert(ldflags, link)
+					table.insert(ldflags, solution.getrelative(sln, link))
 				end
 			end
 		end
