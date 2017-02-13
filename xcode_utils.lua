@@ -80,7 +80,6 @@
 				[".xib"] = "Resources",
 				[".icns"] = "Resources",
 				[".s"] = "Sources",
-				[".S"] = "Sources",
 				[".txt"] = "Resources"
 			}
 
@@ -93,7 +92,7 @@
 			premake.xcode6._buildCategories = categories
 		end
 
-		return premake.xcode6._buildCategories[path.getextension(filename)]
+		return premake.xcode6._buildCategories[string.lower(path.getextension(filename))]
 	end
 
 
