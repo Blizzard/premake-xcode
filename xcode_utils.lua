@@ -99,13 +99,21 @@
 
 
 	function xcode6.getProductType(prj)
-		local types = {
-			ConsoleApp  = "com.apple.product-type.tool",
-			WindowedApp = "com.apple.product-type.application",
-			StaticLib   = "com.apple.product-type.library.static",
-			SharedLib   = "com.apple.product-type.library.dynamic",
-		}
-		return types[prj.kind]
+		if prj.kind == "SharedLib" and prj.sharedlibtype then
+    		local types = {
+				OSXBundle = "com.apple.product-type.bundle",
+				OSXFramework = "com.apple.product-type.framework",
+			}
+			return types[prj.sharedlibtype]
+		else
+    		local types = {
+    			ConsoleApp  = "com.apple.product-type.tool",
+    			WindowedApp = "com.apple.product-type.application",
+    			StaticLib   = "com.apple.product-type.library.static",
+    			SharedLib   = "com.apple.product-type.library.dynamic",
+    		}
+    		return types[prj.kind]
+		end
 	end
 
 
