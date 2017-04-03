@@ -281,7 +281,7 @@
 					outputPaths = { },
 					runOnlyForDeploymentPostprocessing = 0,
 					shellPath = '/bin/sh',
-					shellScript = xcode6.setScriptPath() .. os.translateCommands(cmd)
+					shellScript = xcode6.resolveShellScript(prj, cmd),
 				})
 				cmdCount = cmdCount + 1
 			end)
@@ -307,7 +307,7 @@
 				fileType      = 'pattern.proxy',
 				isEditable    = 1;
 				outputFiles   = outputsContext.buildoutputs,
-				script        = xcode6.setScriptPath() .. os.translateCommands(cmd),
+				script = xcode6.resolveShellScript(prj, cmd),
 			})
 		end
 
@@ -427,7 +427,7 @@
 					outputPaths = solution.getrelative(sln, fcfg.buildoutputs),
 					runOnlyForDeploymentPostprocessing = 0,
 					shellPath = '/bin/sh',
-					shellScript = xcode6.setScriptPath() .. os.translateCommands(cmd)
+					shellScript = xcode6.resolveShellScript(prj, cmd),
 				})
 			end
 		end)
@@ -557,7 +557,7 @@
 					outputPaths = { },
 					runOnlyForDeploymentPostprocessing = 0,
 					shellPath = '/bin/sh',
-					shellScript = xcode6.setScriptPath() .. os.translateCommands(cmd)
+					shellScript = xcode6.resolveShellScript(prj, cmd),
 				})
 				cmdCount = cmdCount + 1
 			end)
@@ -648,7 +648,7 @@
 					outputPaths = { },
 					runOnlyForDeploymentPostprocessing = 0,
 					shellPath = '/bin/sh',
-					shellScript = xcode6.setScriptPath() .. os.translateCommands(cmd)
+					shellScript = xcode6.resolveShellScript(prj, cmd),
 				})
 				cmdCount = cmdCount + 1
 			end)

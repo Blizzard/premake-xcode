@@ -356,8 +356,13 @@
 	end
 
 
-	function xcode6.setScriptPath()
-		return 'PATH=$EXECUTABLE_PATHS:$PATH\n'
+	function xcode6.resolveShellScript(prj, cmd)
+		local userDefinedCommands = os.translateCommands(cmd)
+		if not userDefinedCommands:startswith("cd ") then
+			return 'PATH=$EXECUTABLE_PATHS:$PATH\n' .. 'cd ' .. prj.location .. '\n' .. userDefinedCommands
+		else
+			return 'PATH=$EXECUTABLE_PATHS:$PATH\n' .. userDefinedCommands
+		end
 	end
 
 
