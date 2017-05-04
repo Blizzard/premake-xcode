@@ -680,6 +680,8 @@
 
 		local flags, newflags, delflags = xcode6.fetchlocal(cfg, 'flags')
 		local exceptionhandling = booleanMap[xcode6.fetchlocal(cfg, 'exceptionhandling')]
+		local cdialect = booleanMap[xcode6.fetchlocal(cfg, 'cdialect')]
+		local cppdialect = booleanMap[xcode6.fetchlocal(cfg, 'cppdialect')]
 		local rtti = booleanMap[xcode6.fetchlocal(cfg, 'rtti')]
 		local editandcontinue = booleanMap[xcode6.fetchlocal(cfg, 'editandcontinue')]
 		local optimize = optimizeMap[xcode6.fetchlocal(cfg, 'optimize')]
@@ -723,19 +725,6 @@
 				changedflags[flag] = true
 			end
 
-			if changedflags['C++14'] ~= nil or changedflags['C++11'] ~= nil then
-				if flags['C++14'] then
-					settings.CLANG_CXX_LANGUAGE_STANDARD = 'c++14'
-					settings.CLANG_CXX_LIBRARY = 'libc++'
-				elseif flags['C++11'] then
-					settings.CLANG_CXX_LANGUAGE_STANDARD = 'c++0x'
-					settings.CLANG_CXX_LIBRARY = 'libc++'
-				else
-					settings.CLANG_CXX_LANGUAGE_STANDARD = 'c++98'
-					settings.CLANG_CXX_LIBRARY = 'libstdc++'
-				end
-			end
-
 			if changedflags.FatalCompileWarnings ~= nil then
 				settings.GCC_TREAT_WARNINGS_AS_ERRORS = changedflags.FatalCompileWarnings
 			end
@@ -764,6 +753,33 @@
 			end
 		end
 
+		-- deal with cppdialect.
+		local langMap = {
+			["Default"] = "c++98",
+			["C++98"]   = "c++98",
+			["C++11"]   = "c++0x",
+			["C++14"]   = "c++14",
+			["C++17"]   = "c++17",
+			["gnu++98"] = "c++98",
+			["gnu++11"] = "c++0x",
+			["gnu++14"] = "c++14",
+			["gnu++17"] = "c++17",
+		}
+		local libMap = {
+			["Default"] = "libstdc++",
+			["C++98"]   = "libstdc++",
+			["C++11"]   = "libc++",
+			["C++14"]   = "libc++",
+			["C++17"]   = "libc++",
+			["gnu++98"] = "libstdc++",
+			["gnu++11"] = "libc++",
+			["gnu++14"] = "libc++",
+			["gnu++17"] = "libc++",
+		}
+		settings.CLANG_CXX_LANGUAGE_STANDARD = langMap[cppdialect or "Default"]
+		settings.CLANG_CXX_LIBRARY = libMap[cppdialect or "Default"]
+
+		--
 		if symbols then
 			settings.GCC_ENABLE_FIX_AND_CONTINUE = symbols and editandcontinue
 			settings.LD_GENERATE_MAP_FILE = symbols
