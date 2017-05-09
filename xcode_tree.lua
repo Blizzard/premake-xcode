@@ -680,8 +680,8 @@
 
 		local flags, newflags, delflags = xcode6.fetchlocal(cfg, 'flags')
 		local exceptionhandling = booleanMap[xcode6.fetchlocal(cfg, 'exceptionhandling')]
-		local cdialect = booleanMap[xcode6.fetchlocal(cfg, 'cdialect')]
-		local cppdialect = booleanMap[xcode6.fetchlocal(cfg, 'cppdialect')]
+		local cdialect = xcode6.fetchlocal(cfg, 'cdialect')
+		local cppdialect = xcode6.fetchlocal(cfg, 'cppdialect')
 		local rtti = booleanMap[xcode6.fetchlocal(cfg, 'rtti')]
 		local editandcontinue = booleanMap[xcode6.fetchlocal(cfg, 'editandcontinue')]
 		local optimize = optimizeMap[xcode6.fetchlocal(cfg, 'optimize')]
