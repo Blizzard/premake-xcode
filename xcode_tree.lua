@@ -753,31 +753,49 @@
 			end
 		end
 
+		-- deal with cdialect.
+		if not prj or cdialect then
+			local c_langmap = {
+				["Default"] = "c89",
+				["C89"]     = "c89",
+				["C90"]     = "c99",   -- no c90 support
+				["C99"]     = "c99",
+				["C11"]     = "c11",
+				["gnu89"]   = "gnu89",
+				["gnu90"]   = "gnu99", -- no c90 support
+				["gnu99"]   = "gnu99",
+				["gnu11"]   = "gnu11",
+			}
+			settings.GCC_C_LANGUAGE_STANDARD = c_langmap[cdialect or "Default"]
+		end
+
 		-- deal with cppdialect.
-		local langMap = {
-			["Default"] = "c++98",
-			["C++98"]   = "c++98",
-			["C++11"]   = "c++0x",
-			["C++14"]   = "c++14",
-			["C++17"]   = "c++17",
-			["gnu++98"] = "c++98",
-			["gnu++11"] = "c++0x",
-			["gnu++14"] = "c++14",
-			["gnu++17"] = "c++17",
-		}
-		local libMap = {
-			["Default"] = "libstdc++",
-			["C++98"]   = "libstdc++",
-			["C++11"]   = "libc++",
-			["C++14"]   = "libc++",
-			["C++17"]   = "libc++",
-			["gnu++98"] = "libstdc++",
-			["gnu++11"] = "libc++",
-			["gnu++14"] = "libc++",
-			["gnu++17"] = "libc++",
-		}
-		settings.CLANG_CXX_LANGUAGE_STANDARD = langMap[cppdialect or "Default"]
-		settings.CLANG_CXX_LIBRARY = libMap[cppdialect or "Default"]
+		if not prj or cppdialect then
+			local cpp_langmap = {
+				["Default"] = "c++98",
+				["C++98"]   = "c++98",
+				["C++11"]   = "c++0x",
+				["C++14"]   = "c++14",
+				["C++17"]   = "c++17",
+				["gnu++98"] = "c++98",
+				["gnu++11"] = "c++0x",
+				["gnu++14"] = "c++14",
+				["gnu++17"] = "c++17",
+			}
+			local cpp_libmap = {
+				["Default"] = "libstdc++",
+				["C++98"]   = "libstdc++",
+				["C++11"]   = "libc++",
+				["C++14"]   = "libc++",
+				["C++17"]   = "libc++",
+				["gnu++98"] = "libstdc++",
+				["gnu++11"] = "libc++",
+				["gnu++14"] = "libc++",
+				["gnu++17"] = "libc++",
+			}
+			settings.CLANG_CXX_LANGUAGE_STANDARD = cpp_langmap[cppdialect or "Default"]
+			settings.CLANG_CXX_LIBRARY           = cpp_libmap[cppdialect or "Default"]
+		end
 
 		--
 		if symbols then
