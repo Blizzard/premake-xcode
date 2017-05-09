@@ -754,9 +754,8 @@
 		end
 
 		-- deal with cdialect.
-		if not prj or cdialect then
+		if cdialect ~= nil then
 			local c_langmap = {
-				["Default"] = "c89",
 				["C89"]     = "c89",
 				["C90"]     = "c99",   -- no c90 support
 				["C99"]     = "c99",
@@ -766,24 +765,22 @@
 				["gnu99"]   = "gnu99",
 				["gnu11"]   = "gnu11",
 			}
-			settings.GCC_C_LANGUAGE_STANDARD = c_langmap[cdialect or "Default"]
+			settings.GCC_C_LANGUAGE_STANDARD = c_langmap[cdialect]
 		end
 
 		-- deal with cppdialect.
-		if not prj or cppdialect then
+		if cppdialect ~= nil then
 			local cpp_langmap = {
-				["Default"] = "c++98",
 				["C++98"]   = "c++98",
-				["C++11"]   = "c++0x",
+				["C++11"]   = "c++11",
 				["C++14"]   = "c++14",
 				["C++17"]   = "c++17",
-				["gnu++98"] = "c++98",
-				["gnu++11"] = "c++0x",
-				["gnu++14"] = "c++14",
-				["gnu++17"] = "c++17",
+				["gnu++98"] = "gnu++98",
+				["gnu++11"] = "gnu++11",
+				["gnu++14"] = "gnu++14",
+				["gnu++17"] = "gnu++17",
 			}
 			local cpp_libmap = {
-				["Default"] = "libstdc++",
 				["C++98"]   = "libstdc++",
 				["C++11"]   = "libc++",
 				["C++14"]   = "libc++",
@@ -793,8 +790,8 @@
 				["gnu++14"] = "libc++",
 				["gnu++17"] = "libc++",
 			}
-			settings.CLANG_CXX_LANGUAGE_STANDARD = cpp_langmap[cppdialect or "Default"]
-			settings.CLANG_CXX_LIBRARY           = cpp_libmap[cppdialect or "Default"]
+			settings.CLANG_CXX_LANGUAGE_STANDARD = cpp_langmap[cppdialect]
+			settings.CLANG_CXX_LIBRARY           = cpp_libmap[cppdialect]
 		end
 
 		--
