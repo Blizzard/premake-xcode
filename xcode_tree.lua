@@ -315,7 +315,7 @@
 		vfiles = tree.new()
 		table.foreachi(prj._.files, function(file)
 			local path = file.abspath
-			local vpath = bnet.getvpath(prj, path)
+			local vpath = project.getvpath(prj, path)
 			local isvpath = vpath ~= path
 			local uniquifier = ""
 			if isvpath then
@@ -334,7 +334,7 @@
 			end
 		end)
 		table.foreachi(prj.xcode_resources, function(file)
-			local vpath = bnet.getvpath(prj, file)
+			local vpath = project.getvpath(prj, file)
 			local isvpath = vpath ~= file
 			file = solution.getrelative(sln, file)
 			local uniquifier = ""
