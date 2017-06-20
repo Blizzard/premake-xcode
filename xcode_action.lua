@@ -8,14 +8,14 @@
 	local xcode6   = premake.xcode6
 	local config   = premake.config
 	local project  = premake.project
-	local solution = premake.solution
+	local workspace = premake.workspace
 
-	function xcode6.solution(sln)
-		local pbxproject = xcode6.getSolutionTree(sln)
+	function xcode6.workspace(wks)
+		local pbxproject = xcode6.getSolutionTree(wks)
 		local objects = { }
 		local objectsByType = { }
 
-		xcode6.catalogObjects(sln.xcodeNode, objects, objectsByType)
+		xcode6.catalogObjects(wks.xcodeNode, objects, objectsByType)
 		table.sort(objectsByType)
 
 		_p('// !$*UTF8*$!')

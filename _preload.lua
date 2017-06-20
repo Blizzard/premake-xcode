@@ -16,11 +16,11 @@
 		valid_languages = { "C", "C++" },
 		valid_tools     = { cc = { "clang" } },
 
-		onsolution = function(sln)
+		onWorkspace = function(wks)
 			require('xcode')
 
 			premake.escaper(premake.xcode6.esc)
-			premake.generate(sln, ".xcodeproj/project.pbxproj", premake.xcode6.solution)
+			premake.generate(wks, ".xcodeproj/project.pbxproj", premake.xcode6.workspace)
 		end,
 
 		pathVars = {
@@ -36,7 +36,7 @@
 	newoption
 	{
 		trigger     = "debugraw",
-		description = "Output the raw solution hierarchy in addition to the project file"
+		description = "Output the raw workspace hierarchy in addition to the project file"
 	}
 
 	include("xcode_api.lua")

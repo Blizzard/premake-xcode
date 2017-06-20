@@ -9,7 +9,7 @@
 	local detoken   = premake.detoken
 	local xcode6    = premake.xcode6
 	local project   = premake.project
-	local solution  = premake.solution
+	local workspace  = premake.workspace
 
 
 	function xcode6.newid(...)
@@ -164,7 +164,7 @@
 		if cfg.project then
 			table.foreachi(cfg.links, function(link)
 				if link:find('.framework$') and path.isabsolute(link) then
-					local dir = solution.getrelative(cfg.solution, path.getdirectory(link))
+					local dir = workspace.getrelative(cfg.workspace, path.getdirectory(link))
 					if not done[dir] then
 						table.insert(dirs, dir)
 						done[dir] = true
@@ -177,7 +177,7 @@
 		if frameworkdirs then
 			table.foreachi(frameworkdirs, function(dir)
 				if path.isabsolute(dir) then
-					dir = solution.getrelative(cfg.solution, dir)
+					dir = workspace.getrelative(cfg.workspace, dir)
 				end
 				if not done[dir] then
 					table.insert(dirs, dir)
@@ -272,10 +272,10 @@
 			return cfg[key]
 		end
 
-		local sln = cfg.solution
+		local wks = cfg.workspace
 		local prj = cfg.project
 
-		-- If it's a solution config, just fetch the value normally.
+		-- If it's a workspace config, just fetch the value normally.
 		if not prj then
 			local value = cfg[key]
 			return value, value, { }	-- everything is new
@@ -287,8 +287,8 @@
 		local value = nil
 		local inserted = nil
 		local removed = nil
-		local parentcfg = cfg.buildcfg and table.filter(sln.configs, function(_cfg) return _cfg.name == cfg.name end)[1]
-		local parent = parentcfg or (cfg.terms.files and prj or sln)
+		local parentcfg = cfg.buildcfg and table.filter(wks.configs, function(_cfg) return _cfg.name == cfg.name end)[1]
+		local parent = parentcfg or (cfg.terms.files and prj or wks)
 		if premake.field.removes(field) then
 			value = cfg[key]
 			if value then
@@ -356,8 +356,8 @@
 	end
 
 
-	function xcode6.resolveShellScript(sln, prj, cmd)
-		local userDefinedCommands = os.translateCommandsAndPaths(cmd, prj.basedir, sln.location)
+	function xcode6.resolveShellScript(wks, prj, cmd)
+		local userDefinedCommands = os.translateCommandsAndPaths(cmd, prj.basedir, wks.location)
 		return 'PATH=$EXECUTABLE_PATHS:$PATH\n' .. userDefinedCommands
 	end
 
@@ -390,18 +390,18 @@
 	end
 
 
-	function xcode6.path(sln, prefix, filename)
+	function xcode6.path(wks, prefix, filename)
 		if type(filename) == "table" then
 			local result = {}
 			for i, name in ipairs(filename) do
 				if name and #name > 0 then
-					table.insert(result, xcode6.path(sln, prefix, name))
+					table.insert(result, xcode6.path(wks, prefix, name))
 				end
 			end
 			return result
 		else
 			if filename then
-				return path.join(prefix, path.getrelative(sln.location, filename))
+				return path.join(prefix, path.getrelative(wks.location, filename))
 			end
 		end
 	end

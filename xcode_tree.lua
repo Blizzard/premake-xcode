@@ -9,7 +9,7 @@
 	local context  = premake.context
 	local xcode6   = premake.xcode6
 	local project  = premake.project
-	local solution = premake.solution
+	local workspace = premake.workspace
 	local tree     = premake.tree
 
 	local function removeUniqueTag(s)
@@ -32,18 +32,18 @@
 		return string.lower(a.name or a.path) < string.lower(b.name or b.path)
 	end
 
-	function xcode6.getSolutionTree(sln)
-		if sln.xcodeNode then
-			return sln.xcodeNode
+	function xcode6.getSolutionTree(wks)
+		if wks.xcodeNode then
+			return wks.xcodeNode
 		end
-		return xcode6.buildSolutionTree(sln)
+		return xcode6.buildSolutionTree(wks)
 	end
 
 
-	function xcode6.buildSolutionTree(sln)
+	function xcode6.buildSolutionTree(wks)
 		print('start buildSolutionTree')
 		local pbxproject = {
-			_id = xcode6.newid(sln.name, 'PBXProject'),
+			_id = xcode6.newid(wks.name, 'PBXProject'),
 			_comment = 'Project object',
 			_fileRefs = { }, -- contains only files used by multiple targets (e.g. libraries, not source files)
 			isa = 'PBXProject',
@@ -52,12 +52,12 @@
 				ORGANIZATIONNAME = 'Blizzard Entertainment'
 			},
 			buildConfigurationList = {
-				_id = xcode6.newid(sln.name, 'XCConfigurationList'),
-				_comment = string.format('Build configuration list for PBXProject "%s"', sln.name),
+				_id = xcode6.newid(wks.name, 'XCConfigurationList'),
+				_comment = string.format('Build configuration list for PBXProject "%s"', wks.name),
 				isa = 'XCConfigurationList',
 				buildConfigurations = { },
 				defaultConfigurationIsVisible = 0,
-				defaultConfigurationName = sln.configs[1].name
+				defaultConfigurationName = wks.configs[1].name
 			},
 			compatibilityVersion = 'Xcode 3.2',
 			developmentRegion = 'English',
@@ -66,17 +66,17 @@
 				'Base'
 			},
 			mainGroup = {
-				_id = xcode6.newid(sln.name, 'PBXGroup'),
+				_id = xcode6.newid(wks.name, 'PBXGroup'),
 				isa = 'PBXGroup',
 				children = { },
 				sourceTree = '<group>'
 			},
 			targets = { },
 		}
-		sln.xcodeNode = pbxproject
+		wks.xcodeNode = pbxproject
 
 		local targetsGroup = {
-			_id = xcode6.newid(sln.name, 'Targets', 'PBXGroup'),
+			_id = xcode6.newid(wks.name, 'Targets', 'PBXGroup'),
 			_comment = 'Targets',
 			isa = 'PBXGroup',
 			children = { },
@@ -84,7 +84,7 @@
 			sourceTree = '<group>'
 		}
 		local frameworksGroup = {
-			_id = xcode6.newid(sln.name, 'Frameworks', 'PBXGroup'),
+			_id = xcode6.newid(wks.name, 'Frameworks', 'PBXGroup'),
 			_comment = 'Frameworks',
 			isa = 'PBXGroup',
 			children = { },
@@ -92,7 +92,7 @@
 			sourceTree = '<group>'
 		}
 		local librariesGroup = {
-			_id = xcode6.newid(sln.name, 'Libraries', 'PBXGroup'),
+			_id = xcode6.newid(wks.name, 'Libraries', 'PBXGroup'),
 			_comment = 'Libraries',
 			isa = 'PBXGroup',
 			children = { },
@@ -100,7 +100,7 @@
 			sourceTree = '<group>'
 		}
 		local productsGroup = {
-			_id = xcode6.newid(sln.name, 'Products', 'PBXGroup'),
+			_id = xcode6.newid(wks.name, 'Products', 'PBXGroup'),
 			_comment = 'Products',
 			isa = 'PBXGroup',
 			children = { },
@@ -116,9 +116,9 @@
 		pbxproject._frameworksGroup = frameworksGroup
 		pbxproject._librariesGroup = librariesGroup
 
-		for cfg in solution.eachconfig(sln) do
+		for cfg in workspace.eachconfig(wks) do
 			table.insert(pbxproject.buildConfigurationList.buildConfigurations, {
-				_id = xcode6.newid(cfg.name, sln.name, 'XCBuildConfiguration'),
+				_id = xcode6.newid(cfg.name, wks.name, 'XCBuildConfiguration'),
 				_comment = cfg.name,
 				isa = 'XCBuildConfiguration',
 				buildSettings = xcode6.buildSettings(cfg),
@@ -127,7 +127,7 @@
 		end
 
 		local groups = { }
-		for prj in solution.eachproject(sln) do
+		for prj in workspace.eachproject(wks) do
 			local parentName = prj.group
 			local parent = iif(parentName and #parentName ~= 0, groups[parentName], targetsGroup)
 			if not parent then
@@ -168,7 +168,7 @@
 				return string.lower(a.name) < string.lower(b.name)
 			end)
 		end
-		for prj in solution.eachproject(sln) do
+		for prj in workspace.eachproject(wks) do
 			table.foreachi(project.getdependencies(prj), function(dep)
 				local depNode = dep.xcodeNode
 				table.insert(prj.xcodeNode.dependencies, {
@@ -177,10 +177,10 @@
 					isa = 'PBXTargetDependency',
 					target = depNode,
 					targetProxy = {
-						_id = xcode6.newid(dep.solution.name, dep.name, 'PBXContainerItemProxy'),
+						_id = xcode6.newid(dep.workspace.name, dep.name, 'PBXContainerItemProxy'),
 						_comment = 'PBXContainerItemProxy',
 						isa = 'PBXContainerItemProxy',
-						containerPortal = dep.solution.xcodeNode,
+						containerPortal = dep.workspace.xcodeNode,
 						proxyType = 1,
 						remoteGlobalIDString = depNode._id,
 						remoteInfo = dep.name
@@ -199,11 +199,11 @@
 			return pbxtarget
 		end
 
-		local sln = prj.solution
+		local wks = prj.workspace
 		local prjName = prj.name
-		local slnName = sln.name
+		local wksName = wks.name
 		local parentGroup = {
-			_id = xcode6.newid(prjName, sln.xcodeNode.mainGroup._id, 'PBXGroup'),
+			_id = xcode6.newid(prjName, wks.xcodeNode.mainGroup._id, 'PBXGroup'),
 			_comment = prjName,
 			isa = 'PBXGroup',
 			children = { },
@@ -214,13 +214,13 @@
 		local productName = prj.targetname or prjName
 		if prj.kind == 'Utility' or prj.kind == 'None' then
 			pbxtarget = {
-				_id = xcode6.newid(prjName, slnName, 'PBXAggregateTarget'),
+				_id = xcode6.newid(prjName, wksName, 'PBXAggregateTarget'),
 				isa = 'PBXAggregateTarget',
 			}
 		else
 			local productPath = xcode6.getTargetName(prj, project.getfirstconfig(prj))
 			pbxtarget = {
-				_id = xcode6.newid(prjName, slnName, 'PBXNativeTarget'),
+				_id = xcode6.newid(prjName, wksName, 'PBXNativeTarget'),
 				isa = 'PBXNativeTarget',
 				buildRules = { },
 				productReference = {
@@ -244,7 +244,7 @@
 		pbxtarget._group = parentGroup
 		pbxtarget._project = prj
 		pbxtarget.buildConfigurationList = {
-			_id = xcode6.newid(prjName, slnName, 'XCConfigurationList'),
+			_id = xcode6.newid(prjName, wksName, 'XCConfigurationList'),
 			_comment = string.format('Build configuration list for PBXNativeTarget "%s"', prjName),
 			isa = 'XCConfigurationList',
 			buildConfigurations = { },
@@ -259,7 +259,7 @@
 
 		for cfg in project.eachconfig(prj) do
 			table.insert(pbxtarget.buildConfigurationList.buildConfigurations, {
-				_id = xcode6.newid(cfg.name, slnName, prjName, 'XCBuildConfiguration'),
+				_id = xcode6.newid(cfg.name, wksName, prjName, 'XCBuildConfiguration'),
 				_comment = cfg.name,
 				isa = 'XCBuildConfiguration',
 				buildSettings = xcode6.buildSettings(cfg),
@@ -271,7 +271,7 @@
 		if prj.prebuildcommands then
 			table.foreachi(prj.prebuildcommands, function(cmd)
 				table.insert(pbxtarget.buildPhases, {
-					_id = xcode6.newid(tostring(cmdCount), cmd, prjName, slnName, 'PBXShellScriptBuildPhase'),
+					_id = xcode6.newid(tostring(cmdCount), cmd, prjName, wksName, 'PBXShellScriptBuildPhase'),
 					_comment = 'Run Script',
 					isa = 'PBXShellScriptBuildPhase',
 					buildActionMask = 2147483647,
@@ -281,7 +281,7 @@
 					outputPaths = { },
 					runOnlyForDeploymentPostprocessing = 0,
 					shellPath = '/bin/sh',
-					shellScript = xcode6.resolveShellScript(sln, prj, cmd)
+					shellScript = xcode6.resolveShellScript(wks, prj, cmd)
 				})
 				cmdCount = cmdCount + 1
 			end)
@@ -299,7 +299,7 @@
 			local cmd = table.concat(cmdContext.buildcommands, '\n')
 
 			table.insert(pbxtarget.buildRules, {
-				_id = xcode6.newid(rule.name, sln.name, 'PBXBuildRule'),
+				_id = xcode6.newid(rule.name, wks.name, 'PBXBuildRule'),
 				_comment      = 'PBXBuildRule',
 				isa           = 'PBXBuildRule',
 				compilerSpec  = 'com.apple.compilers.proxy.script',
@@ -307,7 +307,7 @@
 				fileType      = 'pattern.proxy',
 				isEditable    = 1;
 				outputFiles   = outputsContext.buildoutputs,
-				script        = xcode6.resolveShellScript(sln, prj, cmd)
+				script        = xcode6.resolveShellScript(wks, prj, cmd)
 			})
 		end
 
@@ -321,8 +321,8 @@
 			if isvpath then
 				uniquifier = "#" .. path:sha1()
 			end
-			local node = tree.add(isvpath and vfiles or files, solution.getrelative(sln, vpath .. uniquifier), { kind = 'group', isvpath = isvpath })
-			node.relativepath = solution.getrelative(sln, path)
+			local node = tree.add(isvpath and vfiles or files, workspace.getrelative(wks, vpath .. uniquifier), { kind = 'group', isvpath = isvpath })
+			node.relativepath = workspace.getrelative(wks, path)
 			node.kind = 'file'
 			node.file = file
 			node.exclude = file.flags and file.flags.ExcludeFromBuild
@@ -336,7 +336,7 @@
 		table.foreachi(prj.xcode_resources, function(file)
 			local vpath = project.getvpath(prj, file)
 			local isvpath = vpath ~= file
-			file = solution.getrelative(sln, file)
+			file = workspace.getrelative(wks, file)
 			local uniquifier = ""
 			if isvpath then
 				uniquifier = "#" .. file:sha1()
@@ -370,7 +370,7 @@
 				node.loc = path.getbasename(lproj)
 				tree.insert(variantGroup, node)
 			else
-				local node = tree.add(isvpath and vfiles or files, solution.getrelative(sln, vpath .. uniquifier), { kind = 'group', isvpath = isvpath })
+				local node = tree.add(isvpath and vfiles or files, workspace.getrelative(wks, vpath .. uniquifier), { kind = 'group', isvpath = isvpath })
 				node.relativepath = file
 				node.kind = 'file'
 				node.action = 'copy'
@@ -396,7 +396,7 @@
 		end
 
 		local sourcesPhase = {
-			_id = xcode6.newid('Sources', prjName, slnName, 'PBXSourcesBuildPhase'),
+			_id = xcode6.newid('Sources', prjName, wksName, 'PBXSourcesBuildPhase'),
 			_comment = 'Sources',
 			isa = 'PBXSourcesBuildPhase',
 			buildActionMask = 2147483647,
@@ -404,7 +404,7 @@
 			runOnlyForDeploymentPostprocessing = 0
 		}
 		local copyPhase = {
-			_id = xcode6.newid('Resources', prjName, slnName, 'PBXResourcesBuildPhase'),
+			_id = xcode6.newid('Resources', prjName, wksName, 'PBXResourcesBuildPhase'),
 			_comment = 'Resources',
 			isa = 'PBXResourcesBuildPhase',
 			buildActionMask = 2147483647,
@@ -415,19 +415,19 @@
 		table.foreachi(prj._.files, function(fcfg)
 			if fcfg.buildcommands and #fcfg.buildcommands > 0 then
 				local cmd = table.concat(fcfg.buildcommands, '\n')
-				local inputPath = solution.getrelative(sln, fcfg.abspath)
+				local inputPath = workspace.getrelative(wks, fcfg.abspath)
 				table.insert(pbxtarget.buildPhases, {
-					_id = xcode6.newid(cmd, inputPath, prjName, slnName, 'PBXShellScriptBuildPhase'),
+					_id = xcode6.newid(cmd, inputPath, prjName, wksName, 'PBXShellScriptBuildPhase'),
 					_comment = 'Process ' .. fcfg.name,
 					isa = 'PBXShellScriptBuildPhase',
 					buildActionMask = 2147483647,
 					files = { },
-					inputPaths = table.join({ inputPath }, solution.getrelative(sln, fcfg.buildinputs)),
+					inputPaths = table.join({ inputPath }, workspace.getrelative(wks, fcfg.buildinputs)),
 					name = 'Process ' .. fcfg.name,
-					outputPaths = solution.getrelative(sln, fcfg.buildoutputs),
+					outputPaths = workspace.getrelative(wks, fcfg.buildoutputs),
 					runOnlyForDeploymentPostprocessing = 0,
 					shellPath = '/bin/sh',
-					shellScript = xcode6.resolveShellScript(sln, prj, cmd)
+					shellScript = xcode6.resolveShellScript(wks, prj, cmd)
 				})
 			end
 		end)
@@ -437,7 +437,7 @@
 			onleaf = function(node)
 				local nodePath = tree.getlocalpath(node)
 				local ref = {
-					_id = xcode6.newid(node.vpath, prjName, slnName, 'PBXFileReference'),
+					_id = xcode6.newid(node.vpath, prjName, wksName, 'PBXFileReference'),
 					_formatStyle = 'compact',
 					isa = 'PBXFileReference',
 					path = node.parent.vpath and nodePath or node.vpath,
@@ -470,7 +470,7 @@
 					table.insertsorted(parentGroup.children, ref, groupsorter)
 					if node.action and not node.exclude then
 						local buildFile = {
-								_id = xcode6.newid(node.vpath, prjName, slnName, 'PBXBuildFile'),
+								_id = xcode6.newid(node.vpath, prjName, wksName, 'PBXBuildFile'),
 								_comment = string.format('%s in %s', nodeName, node.category),
 								_formatStyle = 'compact',
 								isa = 'PBXBuildFile',
@@ -494,13 +494,13 @@
 				end
 				local variantPath = node.kind == 'variantGroup' and path.join(node.vpath, nodeName) or nil
 				local grp = variantPath and {
-					_id = xcode6.newid(path.join(node.vpath, nodeName), prjName, slnName, 'PBXVariantGroup'),
+					_id = xcode6.newid(path.join(node.vpath, nodeName), prjName, wksName, 'PBXVariantGroup'),
 					_comment = nodeName,
 					isa = 'PBXVariantGroup',
 					children = { },
 					sourceTree = '<group>'
 				} or {
-					_id = xcode6.newid(node.vpath, prjName, slnName, 'PBXGroup'),
+					_id = xcode6.newid(node.vpath, prjName, wksName, 'PBXGroup'),
 					_comment = nodeName,
 					isa = 'PBXGroup',
 					children = { },
@@ -523,7 +523,7 @@
 
 				if node.action and not node.exclude then
 					local buildFile = {
-						_id = xcode6.newid(variantPath or node.vpath, prjName, slnName, 'PBXBuildFile'),
+						_id = xcode6.newid(variantPath or node.vpath, prjName, wksName, 'PBXBuildFile'),
 						_comment = string.format('%s in %s', nodeName, node.category),
 						_formatStyle = 'compact',
 						isa = 'PBXBuildFile',
@@ -547,7 +547,7 @@
 		if prj.prelinkcommands then
 			table.foreachi(prj.prelinkcommands, function(cmd)
 				table.insert(pbxtarget.buildPhases, {
-					_id = xcode6.newid(cmdCount, cmd, prjName, slnName, 'PBXShellScriptBuildPhase'),
+					_id = xcode6.newid(cmdCount, cmd, prjName, wksName, 'PBXShellScriptBuildPhase'),
 					_comment = 'Run Script',
 					isa = 'PBXShellScriptBuildPhase',
 					buildActionMask = 2147483647,
@@ -557,7 +557,7 @@
 					outputPaths = { },
 					runOnlyForDeploymentPostprocessing = 0,
 					shellPath = '/bin/sh',
-					shellScript = xcode6.resolveShellScript(sln, prj, cmd)
+					shellScript = xcode6.resolveShellScript(wks, prj, cmd)
 				})
 				cmdCount = cmdCount + 1
 			end)
@@ -565,7 +565,7 @@
 
 		if prj.kind == 'ConsoleApp' or prj.kind == 'WindowedApp' or prj.kind == 'SharedLib' then
 			local frameworksPhase = {
-				_id = xcode6.newid('Frameworks', prjName, slnName, 'PBXFrameworksBuildPhase'),
+				_id = xcode6.newid('Frameworks', prjName, wksName, 'PBXFrameworksBuildPhase'),
 				_comment = 'Frameworks',
 				isa = 'PBXFrameworksBuildPhase',
 				buildActionMask = 2147483647,
@@ -573,13 +573,13 @@
 				runOnlyForDeploymentPostprocessing = 0
 			}
 			table.foreachi(prj.links, function(link)
-				local sibling = sln.projects[link]
+				local sibling = wks.projects[link]
 				local buildFileRef
 				if sibling then
 					local siblingNode = xcode6.buildProjectTree(sibling, productsGroup)
 					if siblingNode.productReference then
 						buildFileRef = {
-							_id = xcode6.newid(siblingNode.productReference.path, link, prjName, slnName, 'PBXBuildFile'),
+							_id = xcode6.newid(siblingNode.productReference.path, link, prjName, wksName, 'PBXBuildFile'),
 							_comment = path.getname(siblingNode.productReference.path) .. ' in Frameworks',
 							_formatStyle = 'compact',
 							isa = 'PBXBuildFile',
@@ -591,14 +591,14 @@
 					local isSystem = not path.isabsolute(link)
 					local filePath = isSystem and
 						path.join(isFramework and 'System/Library/Frameworks' or 'usr/lib', link) or
-						solution.getrelative(sln, link)
+						workspace.getrelative(wks, link)
 					local fileName = path.getname(filePath)
 
-					local slnNode = sln.xcodeNode
-					local fileRef = slnNode._fileRefs[filePath]
+					local wksNode = wks.xcodeNode
+					local fileRef = wksNode._fileRefs[filePath]
 					if not fileRef then
 						fileRef = {
-							_id = xcode6.newid(filePath, slnName, 'PBXFileReference'),
+							_id = xcode6.newid(filePath, wksName, 'PBXFileReference'),
 							_comment = fileName,
 							_formatStyle = 'compact',
 							isa = 'PBXFileReference',
@@ -607,13 +607,13 @@
 							sourceTree = isSystem and 'SDKROOT' or '<group>'
 						}
 
-						local group = isFramework and slnNode._frameworksGroup or slnNode._librariesGroup
+						local group = isFramework and wksNode._frameworksGroup or wksNode._librariesGroup
 						table.insertsorted(group.children, fileRef, groupsorter)
-						slnNode._fileRefs[filePath] = fileRef
+						wksNode._fileRefs[filePath] = fileRef
 					end
 
 					buildFileRef = {
-						_id = xcode6.newid(filePath, link, prjName, slnName, 'PBXBuildFile'),
+						_id = xcode6.newid(filePath, link, prjName, wksName, 'PBXBuildFile'),
 						_comment = fileName .. ' in Frameworks',
 						_formatStyle = 'compact',
 						isa = 'PBXBuildFile',
@@ -638,7 +638,7 @@
 		if prj.postbuildcommands then
 			table.foreachi(prj.postbuildcommands, function(cmd)
 				table.insert(pbxtarget.buildPhases, {
-					_id = xcode6.newid(cmdCount, cmd, prjName, slnName, 'PBXShellScriptBuildPhase'),
+					_id = xcode6.newid(cmdCount, cmd, prjName, wksName, 'PBXShellScriptBuildPhase'),
 					_comment = 'Run Script',
 					isa = 'PBXShellScriptBuildPhase',
 					buildActionMask = 2147483647,
@@ -648,7 +648,7 @@
 					outputPaths = { },
 					runOnlyForDeploymentPostprocessing = 0,
 					shellPath = '/bin/sh',
-					shellScript = xcode6.resolveShellScript(sln, prj, cmd)
+					shellScript = xcode6.resolveShellScript(wks, prj, cmd)
 				})
 				cmdCount = cmdCount + 1
 			end)
@@ -671,7 +671,7 @@
 	--	end
 	--	return settings
 	function xcode6.buildSettings(cfg)
-		local sln = cfg.solution
+		local wks = cfg.workspace
 		local prj = cfg.project
 		local settings = { }
 
@@ -808,7 +808,7 @@
 
 		if pchheader and not (flags and flags.NoPCH) then
 			settings.GCC_PRECOMPILE_PREFIX_HEADER = true
-			settings.GCC_PREFIX_HEADER = solution.getrelative(sln, path.join(prj.basedir, pchsource or pchheader))
+			settings.GCC_PREFIX_HEADER = workspace.getrelative(wks, path.join(prj.basedir, pchsource or pchheader))
 		end
 
 		if defines then
@@ -829,22 +829,22 @@
 
 		if includedirs then
 			if #delincludedirs > 0 then
-				settings.HEADER_SEARCH_PATHS = solution.getrelative(sln, includedirs)
+				settings.HEADER_SEARCH_PATHS = workspace.getrelative(wks, includedirs)
 			elseif #newincludedirs > 0 then
-				settings.HEADER_SEARCH_PATHS = table.join('$(inherited)', solution.getrelative(sln, newincludedirs))
+				settings.HEADER_SEARCH_PATHS = table.join('$(inherited)', workspace.getrelative(wks, newincludedirs))
 			end
 		end
 
 		-- get libdirs and links
 		if libdirs then
-			newlibdirs = solution.getrelative(sln, newlibdirs)
-			dellibdirs = solution.getrelative(sln, dellibdirs)
+			newlibdirs = workspace.getrelative(wks, newlibdirs)
+			dellibdirs = workspace.getrelative(wks, dellibdirs)
 			if #dellibdirs == 0 then
 				libdirs = newlibdirs
 			end
 			if prj then
 				libdirs = table.join(table.translate(config.getlinks(cfg, 'siblings', 'directory', nil), function(s)
-					return path.rebase(s, prj.location, sln.location)
+					return path.rebase(s, prj.location, wks.location)
 				end), libdirs)
 			end
 			if #dellibdirs > 0 then
@@ -868,8 +868,8 @@
 		end
 
 		if prj then
-			settings.OBJROOT					= solution.getrelative(sln, cfg.objdir)
-			settings.CONFIGURATION_BUILD_DIR	= solution.getrelative(sln, cfg.buildtarget.directory)
+			settings.OBJROOT					= workspace.getrelative(wks, cfg.objdir)
+			settings.CONFIGURATION_BUILD_DIR	= workspace.getrelative(wks, cfg.buildtarget.directory)
 			settings.PRODUCT_NAME				= cfg.buildtarget.basename
 		else
 			settings.SDKROOT					= 'macosx'
@@ -904,15 +904,15 @@
 		end
 
 		local ldflags = table.join(checkflags, linkoptions)
-		if cfg ~= prj and cfg ~= sln then
+		if cfg ~= prj and cfg ~= wks then
 			local newlinks = table.arraycopy(cfg.links)
-			local parent = prj or sln
+			local parent = prj or wks
 			for _,link in ipairs(parent.links) do
 				table.remove(newlinks, table.indexof(newlinks, link))
 			end
 			for _,link in ipairs(newlinks) do
-				if not sln.projects[link] then
-					table.insert(ldflags, solution.getrelative(sln, link))
+				if not wks.projects[link] then
+					table.insert(ldflags, workspace.getrelative(wks, link))
 				end
 			end
 		end
@@ -929,7 +929,7 @@
 		settings.OTHER_LDFLAGS = ldflags
 
 		if bindirs then
-			settings.EXECUTABLE_PATHS = table.concat(solution.getrelative(sln, bindirs), ':')
+			settings.EXECUTABLE_PATHS = table.concat(workspace.getrelative(wks, bindirs), ':')
 		end
 
 		-- add rule properties.
@@ -941,9 +941,9 @@
 				local value = cfg[fld.name]
 				if value ~= nil then
 					if fld.kind == "path" then
-						value = xcode6.path(sln, '$(SRCROOT)', value)
+						value = xcode6.path(wks, '$(SRCROOT)', value)
 					elseif fld.kind == "list:path" then
-						value = xcode6.path(sln, '$(SRCROOT)', value)
+						value = xcode6.path(wks, '$(SRCROOT)', value)
 					end
 
 					settings[prop.name] = premake.rule.expandString(rule, prop, value)

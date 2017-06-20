@@ -6,7 +6,7 @@
 	local api      = premake.api
 	local xcode6   = premake.xcode6
 	local project  = premake.project
-	local solution = premake.solution
+	local workspace = premake.workspace
 	local configset = premake.configset
 
 
@@ -74,7 +74,7 @@
 			files { name }
 			filter { "files:" .. name }
 			buildcommands {
-				"{COPY} \"%{premake.solution.getrelative(sln, file.abspath)}\" \"$BUILT_PRODUCTS_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Icon.icns\""
+				"{COPY} \"%{premake.workspace.getrelative(wks, file.abspath)}\" \"$BUILT_PRODUCTS_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Icon.icns\""
 			}
 			buildoutputs {
 				"$(BUILT_PRODUCTS_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Icon.icns"
