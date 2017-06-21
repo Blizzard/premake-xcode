@@ -677,6 +677,8 @@
 
 		local booleanMap = { On = true, Off = false }
 		local optimizeMap = { Off = 0, Debug = 1, On = 2, Speed = 'fast', Size = 's', Full = 3 }
+		local symbolsMap = { Default = nil, On = true, Off = false, FastLink = true, Full = true }
+
 
 		local flags, newflags, delflags = xcode6.fetchlocal(cfg, 'flags')
 		local exceptionhandling = booleanMap[xcode6.fetchlocal(cfg, 'exceptionhandling')]
@@ -698,7 +700,7 @@
 		local buildoptions, newbuildoptions, delbuildoptions = xcode6.fetchlocal(cfg, 'buildoptions')
 		local linkoptions, newlinkoptions, dellinkoptions = xcode6.fetchlocal(cfg, 'linkoptions')
 		local warnings = xcode6.fetchlocal(cfg, 'warnings')
-		local symbols = booleanMap[xcode6.fetchlocal(cfg, 'symbols')]
+		local symbols = symbolsMap[xcode6.fetchlocal(cfg, 'symbols')]
 		local xcode_settings, newxcode_settings, delxcode_settings = xcode6.fetchlocal(cfg, 'xcode_settings')
 
 		local inheritldflags = true
@@ -795,7 +797,7 @@
 		end
 
 		--
-		if symbols then
+		if symbols ~= nil then
 			settings.GCC_ENABLE_FIX_AND_CONTINUE = symbols and editandcontinue
 			settings.LD_GENERATE_MAP_FILE = symbols
 		end
