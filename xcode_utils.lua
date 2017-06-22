@@ -3,13 +3,15 @@
 -- Define the Apple XCode action and support functions.
 -- Copyright (c) 2015 Blizzard Entertainment
 --
-	local api       = premake.api
-	local configset = premake.configset
-	local context   = premake.context
-	local detoken   = premake.detoken
-	local xcode6    = premake.xcode6
-	local project   = premake.project
-	local workspace  = premake.workspace
+
+	local p         = premake
+	local api       = p.api
+	local configset = p.configset
+	local context   = p.context
+	local detoken   = p.detoken
+	local xcode6    = p.modules.xcode_blizzard
+	local project   = p.project
+	local workspace = p.workspace
 
 
 	function xcode6.newid(...)
@@ -63,7 +65,7 @@
 
 
 	function xcode6.getBuildCategory(filename)
-		if not premake.xcode6._buildCategories then
+		if not xcode6._buildCategories then
 			local categories = {
 				[".a"] = "Frameworks",
 				[".app"] = "Applications",
@@ -85,16 +87,16 @@
 				[".txt"] = "Resources"
 			}
 
-			for rule in premake.global.eachRule() do
+			for rule in p.global.eachRule() do
 				for _, v in ipairs(rule.fileextension) do
 					categories[v] = "Sources"
 				end
 			end
 
-			premake.xcode6._buildCategories = categories
+			xcode6._buildCategories = categories
 		end
 
-		return premake.xcode6._buildCategories[string.lower(path.getextension(filename))]
+		return xcode6._buildCategories[string.lower(path.getextension(filename))]
 	end
 
 
@@ -267,7 +269,7 @@
 		end
 
 		-- If there's no field definition, just return the raw value.
-		local field = premake.field.get(key)
+		local field = p.field.get(key)
 		if not field then
 			return cfg[key]
 		end
@@ -289,12 +291,12 @@
 		local removed = nil
 		local parentcfg = cfg.buildcfg and table.filter(wks.configs, function(_cfg) return _cfg.name == cfg.name end)[1]
 		local parent = parentcfg or (cfg.terms.files and prj or wks)
-		if premake.field.removes(field) then
+		if p.field.removes(field) then
 			value = cfg[key]
 			if value then
 				if cfg.abspath then
 					-- files don't automatically inherit settings from projects, so handle that here
-					value = premake.field.merge(field, xcode6.fetchfiltered(parent, field, cfg.terms), value)
+					value = p.field.merge(field, xcode6.fetchfiltered(parent, field, cfg.terms), value)
 				end
 				local parentvalue = parent[key]
 				inserted = { }
@@ -310,12 +312,12 @@
 					end
 				end
 			end
-		elseif premake.field.merges(field) then
+		elseif p.field.merges(field) then
 			value = cfg[key]
 			if value then
 				if cfg.abspath then
 					-- files don't automatically inherit settings from projects, so handle that here
-					value = premake.field.merge(field, xcode6.fetchfiltered(parent, field, cfg.terms), value)
+					value = p.field.merge(field, xcode6.fetchfiltered(parent, field, cfg.terms), value)
 				end
 				local slnvalue = context.fetchvalue(parent, key)
 				local parentvalue = xcode6.fetchfiltered(cfg, field, cfg.terms)
@@ -325,9 +327,9 @@
 						table.insert(inserted, v)
 					end
 				end
-				inserted = premake.field.merge(field, inserted, context.fetchvalue(prj, key, true))
-				inserted = premake.field.merge(field, inserted, xcode6.fetchfiltered(cfg, field, cfg.terms, prj))
-				inserted = premake.field.merge(field, inserted, context.fetchvalue(cfg, key, true))
+				inserted = p.field.merge(field, inserted, context.fetchvalue(prj, key, true))
+				inserted = p.field.merge(field, inserted, xcode6.fetchfiltered(cfg, field, cfg.terms, prj))
+				inserted = p.field.merge(field, inserted, context.fetchvalue(cfg, key, true))
 				removed = { }
 			end
 		else
@@ -363,7 +365,7 @@
 
 
 	function xcode6.buildOutputsEnvironment(rule)
-		local pathVars = premake.rule.createPathVars(rule, "$(%s)")
+		local pathVars = p.rule.createPathVars(rule, "$(%s)")
 		pathVars["file.basename"]     = { absolute = false, token = "$(INPUT_FILE_BASE)" }
 		pathVars["file.abspath"]      = { absolute = true,  token = "$(INPUT_FILE_PATH)" }
 		pathVars["file.relpath"]      = { absolute = true,  token = "$(INPUT_FILE_PATH)" }
@@ -383,7 +385,7 @@
 		pathVars["file.directory"]    = { absolute = true,  token = "$INPUT_FILE_DIR" }
 		pathVars["file.reldirectory"] = { absolute = true,  token = "$INPUT_FILE_DIR" }
 
-		local environ = premake.rule.createEnvironment(rule, "$%s")
+		local environ = p.rule.createEnvironment(rule, "$%s")
 		environ.pathVars = pathVars
 
 		return context.extent(rule, environ)

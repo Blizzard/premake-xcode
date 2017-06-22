@@ -4,13 +4,14 @@
 -- Copyright (c) 2015 Blizzard Entertainment
 --
 
-	local api      = premake.api
-	local config   = premake.config
-	local context  = premake.context
-	local xcode6   = premake.xcode6
-	local project  = premake.project
-	local workspace = premake.workspace
-	local tree     = premake.tree
+	local p         = premake
+	local api       = p.api
+	local config    = p.config
+	local context   = p.context
+	local xcode6    = p.modules.xcode_blizzard
+	local project   = p.project
+	local workspace = p.workspace
+	local tree      = p.tree
 
 	local function removeUniqueTag(s)
 		local i = string.find(s, "#")

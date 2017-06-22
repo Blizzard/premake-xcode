@@ -1,12 +1,9 @@
 --
--- xcode6_api.lua
+-- xcode_api.lua
 -- Define the Apple XCode action and support functions.
 -- Copyright (c) 2015 Blizzard Entertainment
 --
-	local api      = premake.api
-	local xcode6   = premake.xcode6
-	local project  = premake.project
-	local workspace = premake.workspace
+	local api       = premake.api
 	local configset = premake.configset
 
 
@@ -64,6 +61,7 @@
 		kind = "list:string",
 		tokens = true
 	}
+
 
 	premake.override(_G, "icon", function(base, name)
 		local c = base(name)

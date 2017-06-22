@@ -1,16 +1,15 @@
 --
--- xcode6_action.lua
+-- xcode_action.lua
 -- Define the Apple XCode action and support functions.
 -- Copyright (c) 2015 Blizzard Entertainment
 --
-	premake.xcode6 = { }
-	local api	   = premake.api
-	local xcode6   = premake.xcode6
-	local config   = premake.config
-	local project  = premake.project
-	local workspace = premake.workspace
+	local p         = premake
+	local api       = p.api
+	local xcode6    = p.modules.xcode_blizzard
+	local config    = p.config
+	local project   = p.project
 
-	function xcode6.workspace(wks)
+	function xcode6.generate_workspace(wks)
 		local pbxproject = xcode6.getSolutionTree(wks)
 		local objects = { }
 		local objectsByType = { }

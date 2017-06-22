@@ -8,7 +8,7 @@
 	{
 		trigger         = "xcode",
 		shortname       = "Xcode",
-		description     = "Generate Apple Xcode 6 project",
+		description     = "Generate Apple Xcode project",
 		targetos        = "macosx",
 		toolset         = "clang",
 
@@ -17,10 +17,9 @@
 		valid_tools     = { cc = { "clang" } },
 
 		onWorkspace = function(wks)
-			require('xcode')
-
-			premake.escaper(premake.xcode6.esc)
-			premake.generate(wks, ".xcodeproj/project.pbxproj", premake.xcode6.workspace)
+			local m = require('xcode-blizzard')
+			premake.escaper(m.esc)
+			premake.generate(wks, ".xcodeproj/project.pbxproj", m.generate_workspace)
 		end,
 
 		pathVars = {
