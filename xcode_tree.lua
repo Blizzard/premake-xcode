@@ -885,7 +885,7 @@
 		settings.EXECUTABLE_PREFIX = targetprefix
 
 		local warn = nil
-		if warnings == 'Extra' then
+		if warnings == 'Extra' or warnings == 'High' then
 			warn = { '-Wall' }
 		elseif warnings == 'Off' then
 			settings.GCC_WARN_INHIBIT_ALL_WARNINGS = true
@@ -1027,7 +1027,7 @@
 			end
 		end
 
-		if warnings == 'Extra' then
+		if warnings == 'Extra' or warnings == 'High' then
 			table.insert(compiler_flags, '-Wall')
 		elseif warnings == 'Off' then
 			table.insert(compiler_flags, '-w')
