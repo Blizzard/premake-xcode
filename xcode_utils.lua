@@ -84,6 +84,7 @@
 				[".xib"] = "Resources",
 				[".icns"] = "Resources",
 				[".s"] = "Sources",
+				[".storyboard"] = "Resources",
 				[".txt"] = "Resources"
 			}
 
