@@ -988,7 +988,7 @@
 			table.insert(compiler_flags, exceptionhandling and '-fexceptions' or '-fno-exceptions')
 		end
 		if rtti ~= nil then
-			table.insert(compiler_flags, rtti and '-frtti' or 'fno-rtti')
+			table.insert(compiler_flags, rtti and '-frtti' or '-fno-rtti')
 		end
 
 		if optimize ~= nil then
