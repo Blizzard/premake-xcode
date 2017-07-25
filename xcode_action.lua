@@ -102,7 +102,7 @@
 				local str = '{' .. newline
 				table.foreachi(fields, function(k)
 					if not k:find('^_') then
-						str = str .. string.format('%s%s = %s;%s', indent1Str, k, xcode6.formatObject(obj[k], indent + 1, false, style), newline)
+						str = str .. string.format('%s%s = %s;%s', indent1Str, xcode6.formatObject(k), xcode6.formatObject(obj[k], indent + 1, false, style), newline)
 					end
 				end)
 				return str .. string.format('%s}', indentStr)
