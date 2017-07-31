@@ -875,7 +875,13 @@
 			settings.CONFIGURATION_BUILD_DIR	= workspace.getrelative(wks, cfg.buildtarget.directory)
 			settings.PRODUCT_NAME				= cfg.buildtarget.basename
 		else
-			settings.SDKROOT					= 'macosx'
+			local sdks =
+			{
+				[p.MACOSX]  = 'macosx',
+				[p.IOS]     = 'iphoneos',
+				[p.APPLETV] = 'appletvos',
+			}
+			settings.SDKROOT					= sdks[cfg.system]
 			settings.USE_HEADERMAP				= false
 			settings.GCC_WARN_ABOUT_RETURN_TYPE	= true
 			settings.GCC_WARN_UNUSED_VARIABLE 	= true

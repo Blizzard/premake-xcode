@@ -6,7 +6,20 @@
 	local api       = premake.api
 	local configset = premake.configset
 
+	premake.IOS     = "ios"
+	premake.APPLETV = "appletv"
 
+	-- register IOS and AppleTV os
+	api.addAllowed("system", premake.IOS)
+	api.addAllowed("system", premake.APPLETV)
+
+	local os = premake.option.get("os")
+	if os ~= nil then
+		table.insert(os.allowed, { premake.IOS,  "iOS" })
+		table.insert(os.allowed, { premake.APPLETV,  "Apple TV" })
+	end
+
+	-- register additional Xcode specific API's.
 	api.register {
 		name = "xcode_settings",
 		scope = "config",
