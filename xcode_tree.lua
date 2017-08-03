@@ -40,7 +40,6 @@
 		return xcode6.buildSolutionTree(wks)
 	end
 
-
 	function xcode6.buildSolutionTree(wks)
 		print('start buildSolutionTree')
 		local pbxproject = {
@@ -168,6 +167,13 @@
 
 				return string.lower(a.name) < string.lower(b.name)
 			end)
+
+			if prj.kind == 'ConsoleApp' or prj.kind == 'WindowedApp' or prj.kind == 'SharedLib' then
+				if prj.xcode_targetattributes then
+					pbxproject.attributes.TargetAttributes = pbxproject.attributes.TargetAttributes or {}
+					pbxproject.attributes.TargetAttributes[prjNode._id] = prj.xcode_targetattributes
+				end
+			end
 		end
 		for prj in workspace.eachproject(wks) do
 			table.foreachi(project.getdependencies(prj), function(dep)
@@ -676,10 +682,10 @@
 		local prj = cfg.project
 		local settings = { }
 
+		-- fetch settings from premake.
 		local booleanMap = { On = true, Off = false }
 		local optimizeMap = { Off = 0, Debug = 1, On = 2, Speed = 'fast', Size = 's', Full = 3 }
 		local symbolsMap = { Default = nil, On = true, Off = false, FastLink = true, Full = true }
-
 
 		local flags, newflags, delflags = xcode6.fetchlocal(cfg, 'flags')
 		local exceptionhandling = booleanMap[xcode6.fetchlocal(cfg, 'exceptionhandling')]
@@ -703,6 +709,7 @@
 		local warnings = xcode6.fetchlocal(cfg, 'warnings')
 		local symbols = symbolsMap[xcode6.fetchlocal(cfg, 'symbols')]
 		local xcode_settings, newxcode_settings, delxcode_settings = xcode6.fetchlocal(cfg, 'xcode_settings')
+		local system = xcode6.fetchlocal(cfg, 'system')
 
 		local inheritldflags = true
 		local inheritcflags = true
@@ -752,6 +759,17 @@
 			for flag, check in pairs(lchecks) do
 				if check then
 					table.insert(checkflags, flag)
+				end
+			end
+		end
+
+		-- deal with xcode_targetattributes.
+		if system == p.IOS then
+			settings["CODE_SIGN_IDENTITY[sdk=iphoneos*]"] = "iPhone Developer"
+			if cfg.xcode_targetattributes ~= nil then
+				settings.DEVELOPMENT_TEAM = cfg.xcode_targetattributes.DevelopmentTeam
+				if cfg.xcode_targetattributes.ProvisioningStyle:lower() == 'automatic' then
+					settings.PROVISIONING_PROFILE_SPECIFIER = "";
 				end
 			end
 		end
@@ -807,7 +825,7 @@
 		settings.GCC_ENABLE_OBJC_EXCEPTIONS = exceptionhandling
 		settings.GCC_ENABLE_CPP_RTTI        = rtti
 
-		settings.GCC_OPTIMIZATION_LEVEL = optimize
+		settings.GCC_OPTIMIZATION_LEVEL     = optimize
 
 		if pchheader and not (flags and flags.NoPCH) then
 			settings.GCC_PRECOMPILE_PREFIX_HEADER = true
@@ -907,7 +925,9 @@
 		settings.EXECUTABLE_PREFIX = targetprefix
 
 		local warn = nil
-		if warnings == 'Extra' or warnings == 'High' then
+		if warnings == 'Extra' then
+			warn = { '-Wall', '-Wextra' }
+		elseif warnings == 'High' then
 			warn = { '-Wall' }
 		elseif warnings == 'Off' then
 			settings.GCC_WARN_INHIBIT_ALL_WARNINGS = true

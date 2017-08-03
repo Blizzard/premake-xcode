@@ -20,50 +20,6 @@
 	end
 
 
-	function xcode6.getFileType(filename)
-		local types = {
-			[".a"]         = "archive.ar",
-			[".app"]       = "wrapper.application",
-			[".c"]         = "sourcecode.c.c",
-			[".cc"]        = "sourcecode.cpp.cpp",
-			[".cpp"]       = "sourcecode.cpp.cpp",
-			[".css"]       = "text.css",
-			[".cxx"]       = "sourcecode.cpp.cpp",
-			[".dylib"]     = "compiled.mach-o.dylib",
-			[".S"]         = "sourcecode.asm.asm",
-			[".framework"] = "wrapper.framework",
-			[".gif"]       = "image.gif",
-			[".h"]         = "sourcecode.c.h",
-			[".hh"]        = "sourcecode.cpp.h",
-			[".hpp"]       = "sourcecode.cpp.h",
-			[".hxx"]       = "sourcecode.cpp.h",
-			[".html"]      = "text.html",
-			[".inl"]       = "sourcecode.c.h",
-			[".lua"]       = "sourcecode.lua",
-			[".m"]         = "sourcecode.c.objc",
-			[".mm"]        = "sourcecode.cpp.objc",
-			[".metal"]	   = "sourcecode.metal",
-			[".mig"]       = "sourcecode.mig",
-			[".nib"]       = "wrapper.nib",
-			[".pch"]       = "sourcecode.c.h",
-			[".plist"]     = "text.plist.xml",
-			[".strings"]   = "text.plist.strings",
-			[".xib"]       = "file.xib",
-			[".icns"]      = "image.icns",
-			[".s"]         = "sourcecode.asm",
-			[".sh"]        = "text.script.sh",
-			[".bmp"]       = "image.bmp",
-			[".wav"]       = "audio.wav",
-			[".xcassets"]  = "folder.assetcatalog",
-			[".xcconfig"]  = "text.xcconfig",
-			[".xml"]       = "text.xml",
-		}
-
-		local ext = string.lower(path.getextension(filename));
-		return types[ext] or "text"
-	end
-
-
 	function xcode6.getBuildCategory(filename)
 		if not xcode6._buildCategories then
 			local categories = {
