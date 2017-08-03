@@ -12,6 +12,7 @@
 	-- register IOS and AppleTV os
 	api.addAllowed("system", premake.IOS)
 	api.addAllowed("system", premake.APPLETV)
+	api.addAllowed("architecture", { "armv7", "armv7s", "arm64" })
 
 	local os = premake.option.get("os")
 	if os ~= nil then

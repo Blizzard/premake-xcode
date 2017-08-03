@@ -822,12 +822,28 @@
 			end
 		end
 
-		if architecture == 'x86' then
-			settings.ARCHS = '$(ARCHS_STANDARD_32_BIT)'
-		elseif architecture == 'x86_64' then
-			settings.ARCHS = '$(ARCHS_STANDARD_64_BIT)'
-		elseif architecture == 'universal' then
-			settings.ARCHS = '$(ARCHS_STANDARD_32_64_BIT)'
+		if architecture ~= nil then
+			local arch_map = {}
+
+			if cfg.system == p.MACOSX then
+				arch_map = {
+					["x86"]     = '$(ARCHS_STANDARD_32_BIT)',
+					["x86_64"]  = '$(ARCHS_STANDARD_64_BIT)',
+				}
+			elseif cfg.system == p.IOS then
+				arch_map = {
+					["armv7"]   = '$(ARCHS_STANDARD)',
+					["armv7s"]  = '$(ARCHS_STANDARD)',
+					["arm64"]   = '$(ARCHS_STANDARD)',
+				}
+			end
+
+			local archs = arch_map[architecture]
+			if archs then
+				settings.ARCHS = arch_map[architecture]
+			else
+				p.error('%s is unsupported for %s.', architecture, cfg.system)
+			end
 		end
 
 		if includedirs then
