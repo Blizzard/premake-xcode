@@ -40,17 +40,6 @@
 		return xcode6.buildSolutionTree(wks)
 	end
 
-	function xcode6.getTargetAttributes(prj)
-		if prj.xcode_targetattributes == nil then
-			return nil
-		end
-
-		return {
-			DevelopmentTeam   = prj.xcode_targetattributes.DevelopmentTeam,
-			ProvisioningStyle = prj.xcode_targetattributes.ProvisioningStyle,
-		}
-	end
-
 	function xcode6.buildSolutionTree(wks)
 		print('start buildSolutionTree')
 		local pbxproject = {
@@ -180,10 +169,9 @@
 			end)
 
 			if prj.kind == 'ConsoleApp' or prj.kind == 'WindowedApp' or prj.kind == 'SharedLib' then
-				local targetAttributes = xcode6.getTargetAttributes(prj)
-				if targetAttributes then
+				if prj.xcode_targetattributes then
 					pbxproject.attributes.TargetAttributes = pbxproject.attributes.TargetAttributes or {}
-					pbxproject.attributes.TargetAttributes[prjNode._id] = targetAttributes
+					pbxproject.attributes.TargetAttributes[prjNode._id] = prj.xcode_targetattributes
 				end
 			end
 		end
