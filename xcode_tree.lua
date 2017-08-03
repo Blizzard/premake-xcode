@@ -169,7 +169,7 @@
 			end)
 
 			if prj.kind == 'ConsoleApp' or prj.kind == 'WindowedApp' or prj.kind == 'SharedLib' then
-				if prj.xcode_targetattributes then
+				if not table.isempty(prj.xcode_targetattributes) then
 					pbxproject.attributes.TargetAttributes = pbxproject.attributes.TargetAttributes or {}
 					pbxproject.attributes.TargetAttributes[prjNode._id] = prj.xcode_targetattributes
 				end
@@ -766,9 +766,9 @@
 		-- deal with xcode_targetattributes.
 		if system == p.IOS then
 			settings["CODE_SIGN_IDENTITY[sdk=iphoneos*]"] = "iPhone Developer"
-			if cfg.xcode_targetattributes ~= nil then
-				settings.DEVELOPMENT_TEAM = cfg.xcode_targetattributes.DevelopmentTeam
-				if cfg.xcode_targetattributes.ProvisioningStyle:lower() == 'automatic' then
+			if not table.isempty(prj.xcode_targetattributes) then
+				settings.DEVELOPMENT_TEAM = prj.xcode_targetattributes.DevelopmentTeam
+				if prj.xcode_targetattributes.ProvisioningStyle:lower() == 'automatic' then
 					settings.PROVISIONING_PROFILE_SPECIFIER = "";
 				end
 			end
