@@ -40,19 +40,16 @@
 		return xcode6.buildSolutionTree(wks)
 	end
 
-	function xcode6.getTargetAttributes(wks)
-		if wks.xcode_targetattributes == nil then
+	function xcode6.getTargetAttributes(prj)
+		if prj.xcode_targetattributes == nil then
 			return nil
 		end
 
 		return {
-			[xcode6.newid(wks.name, 'TargetAttributes')] = {
-				DevelopmentTeam   = wks.xcode_targetattributes.DevelopmentTeam,
-				ProvisioningStyle = wks.xcode_targetattributes.ProvisioningStyle,
-			}
+			DevelopmentTeam   = prj.xcode_targetattributes.DevelopmentTeam,
+			ProvisioningStyle = prj.xcode_targetattributes.ProvisioningStyle,
 		}
 	end
-
 
 	function xcode6.buildSolutionTree(wks)
 		print('start buildSolutionTree')
@@ -63,8 +60,7 @@
 			isa = 'PBXProject',
 			attributes = {
 				BuildIndependentTargetsInParallel = 'YES',
-				ORGANIZATIONNAME = 'Blizzard Entertainment',
-				TargetAttributes = xcode6.getTargetAttributes(wks)
+				ORGANIZATIONNAME = 'Blizzard Entertainment'
 			},
 			buildConfigurationList = {
 				_id = xcode6.newid(wks.name, 'XCConfigurationList'),
@@ -182,6 +178,14 @@
 
 				return string.lower(a.name) < string.lower(b.name)
 			end)
+
+			if prj.kind == 'ConsoleApp' or prj.kind == 'WindowedApp' or prj.kind == 'SharedLib' then
+				local targetAttributes = xcode6.getTargetAttributes(prj)
+				if targetAttributes then
+					pbxproject.attributes.TargetAttributes = pbxproject.attributes.TargetAttributes or {}
+					pbxproject.attributes.TargetAttributes[prjNode._id] = targetAttributes
+				end
+			end
 		end
 		for prj in workspace.eachproject(wks) do
 			table.foreachi(project.getdependencies(prj), function(dep)

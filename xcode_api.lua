@@ -73,7 +73,7 @@
 
 	api.register {
 		name = "xcode_targetattributes",
-		scope = "workspace",
+		scope = "project",
 		kind  = "keyed:string"
 	}
 
