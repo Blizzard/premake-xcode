@@ -766,9 +766,9 @@
 		-- deal with xcode_targetattributes.
 		if system == p.IOS then
 			settings["CODE_SIGN_IDENTITY[sdk=iphoneos*]"] = "iPhone Developer"
-			if not table.isempty(prj.xcode_targetattributes) then
-				settings.DEVELOPMENT_TEAM = prj.xcode_targetattributes.DevelopmentTeam
-				if prj.xcode_targetattributes.ProvisioningStyle:lower() == 'automatic' then
+			if not table.isempty(cfg.xcode_targetattributes) then
+				settings.DEVELOPMENT_TEAM = cfg.xcode_targetattributes.DevelopmentTeam
+				if cfg.xcode_targetattributes.ProvisioningStyle:lower() == 'automatic' then
 					settings.PROVISIONING_PROFILE_SPECIFIER = "";
 				end
 			end
