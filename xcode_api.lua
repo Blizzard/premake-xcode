@@ -19,10 +19,10 @@
 	os.systemTags[p.IOS]     = { "ios",     "mobile" }
 	os.systemTags[p.APPLETV] = { "appletv", "mobile" }
 
-	local os = premake.option.get("os")
-	if os ~= nil then
-		table.insert(os.allowed, { premake.IOS,  "iOS" })
-		table.insert(os.allowed, { premake.APPLETV,  "Apple TV" })
+	local osoption = premake.option.get("os")
+	if osoption ~= nil then
+		table.insert(osoption.allowed, { p.IOS,     "iOS" })
+		table.insert(osoption.allowed, { p.APPLETV, "Apple TV" })
 	end
 
 	-- register additional Xcode specific API's.
