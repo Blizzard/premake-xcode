@@ -3,16 +3,21 @@
 -- Define the Apple XCode action and support functions.
 -- Copyright (c) 2015 Blizzard Entertainment
 --
+	local p         = premake
 	local api       = premake.api
 	local configset = premake.configset
 
-	premake.IOS     = "ios"
-	premake.APPLETV = "appletv"
+	p.IOS     = "ios"
+	p.APPLETV = "appletv"
 
 	-- register IOS and AppleTV os
-	api.addAllowed("system", premake.IOS)
-	api.addAllowed("system", premake.APPLETV)
+	api.addAllowed("system", p.IOS)
+	api.addAllowed("system", p.APPLETV)
 	api.addAllowed("architecture", { "armv7", "armv7s", "arm64" })
+
+	-- add system tags for ios and appletv.
+	os.systemTags[p.IOS]     = { "ios",     "mobile" }
+	os.systemTags[p.APPLETV] = { "appletv", "mobile" }
 
 	local os = premake.option.get("os")
 	if os ~= nil then
