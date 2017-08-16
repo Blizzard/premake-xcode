@@ -845,8 +845,9 @@
 
 			if cfg.system == p.MACOSX then
 				arch_map = {
-					["x86"]     = '$(ARCHS_STANDARD_32_BIT)',
-					["x86_64"]  = '$(ARCHS_STANDARD_64_BIT)',
+					["x86"]       = '$(ARCHS_STANDARD_32_BIT)',
+					["x86_64"]    = '$(ARCHS_STANDARD_64_BIT)',
+					["universal"] = '$(ARCHS_STANDARD_32_64_BIT)',
 				}
 			elseif cfg.system == p.IOS then
 				arch_map = {
